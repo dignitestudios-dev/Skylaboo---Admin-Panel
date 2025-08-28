@@ -1,0 +1,183 @@
+import {
+  Search,
+  Download,
+  Plus,
+  RefreshCcw,
+  ChevronRight,
+  ChevronLeft,
+} from "lucide-react";
+import Table from "../ui/Table";
+import Button from "../ui/Button";
+import Input from "../ui/Input";
+import Select from "../ui/Select";
+import { PAGINATION_CONFIG } from "../../config/constants";
+
+const DataTable = ({
+  data = [],
+  columns = [],
+  title,
+  searchable = false,
+  exportable = false,
+  addButton = true,
+  onAdd,
+  onExport,
+  loading = false,
+  totalPages = 1,
+  totalData = 0,
+  currentPage = 1,
+  pageSize = PAGINATION_CONFIG.defaultPageSize,
+  searchTerm = "",
+  onPageChange,
+  onPageSizeChange,
+  onSearch,
+}) => {
+  // Export handler
+  const handleExport = () => {
+    if (onExport) {
+      onExport(data);
+    } else {
+      const csv = [
+        columns.map((col) => col.label).join(","),
+        ...data.map((row) =>
+          columns.map((col) => row[col.key] || "").join(",")
+        ),
+      ].join("\n");
+      const blob = new Blob([csv], { type: "text/csv" });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${title || "data"}.csv`;
+      a.click();
+    }
+  };
+
+  const handleSearch = (e) => {
+    if (loading) return;
+
+    onSearch && onSearch(e.target.value);
+  };
+
+  return (
+    <div className="space-y-4">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          {title && (
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+              {title}
+            </h2>
+          )}
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+            Showing {(currentPage - 1) * pageSize + 1} to{" "}
+            {Math.min(currentPage * pageSize, totalData)} of {totalData} results
+          </p>
+        </div>
+        <div className="flex items-center space-x-2">
+          {exportable && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleExport}
+              icon={<Download className="w-4 h-4" />}
+              disabled={loading}
+            >
+              Export
+            </Button>
+          )}
+          {addButton && onAdd && (
+            <Button
+              size="sm"
+              onClick={onAdd}
+              icon={<Plus className="w-4 h-4" />}
+              disabled={loading}
+            >
+              Add New
+            </Button>
+          )}
+        </div>
+      </div>
+
+      {/* Search */}
+      <div className="flex items-center space-x-4">
+        {searchable && (
+          <div className="flex-1 max-w-md">
+            <Input
+              placeholder="Search..."
+              value={searchTerm}
+              onChange={(e) => handleSearch(e)}
+              leftIcon={<Search className="w-4 h-4 text-gray-400" />}
+              className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-700"
+            />
+          </div>
+        )}
+      </div>
+
+      {/* Table */}
+      <div className="bg-white dark:bg-gray-900 rounded-lg overflow-hidden">
+        {loading ? (
+          <div className="flex items-center justify-center py-12 gap-2">
+            <RefreshCcw className={`animate-spin text-primary-600`} />{" "}
+            <span className="text-gray-400">Loading...</span>
+          </div>
+        ) : (
+          <Table data={data} columns={columns} loading={loading} />
+        )}
+      </div>
+
+      {/* Pagination */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-2">
+          <span className="text-sm text-gray-700 dark:text-gray-300">Show</span>
+          <Select
+            value={pageSize}
+            onChange={(e) =>
+              onPageSizeChange && onPageSizeChange(Number(e.target.value))
+            }
+            disabled={loading}
+            options={PAGINATION_CONFIG.pageSizeOptions.map((size) => ({
+              value: size,
+              label: size,
+            }))}
+            className="px-2 py-1 text-sm w-20"
+          />
+          <span className="text-sm text-gray-700 dark:text-gray-300">
+            entries
+          </span>
+        </div>
+        {totalPages > 1 && (
+          <div className="flex items-center space-x-1">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={currentPage === 1 || loading}
+              onClick={() => onPageChange && onPageChange(currentPage - 1)}
+            >
+              <ChevronLeft size={20} />
+            </Button>
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+              <Button
+                key={page}
+                variant={currentPage === page ? "primary" : "outline"}
+                disabled={loading}
+                size="sm"
+                onClick={() => onPageChange && onPageChange(page)}
+              >
+                {page}
+              </Button>
+            ))}
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={currentPage === totalPages || loading}
+              onClick={() => onPageChange && onPageChange(currentPage + 1)}
+            >
+              <ChevronRight size={20} />
+            </Button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default DataTable;

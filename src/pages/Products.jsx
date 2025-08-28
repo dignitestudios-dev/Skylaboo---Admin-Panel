@@ -1,18 +1,31 @@
 import { useMemo, useState } from "react";
 import Select from "../components/ui/Select";
-import { Edit, Trash2, Eye, Package, ShieldX, ShieldCheck } from "lucide-react";
+import {
+  Edit,
+  Trash2,
+  Eye,
+  Package,
+  ShieldX,
+  ShieldCheck,
+  X,
+} from "lucide-react";
 import DataTable from "../components/common/DataTable";
 import Button from "../components/ui/Button";
 import Badge from "../components/ui/Badge";
 import Modal from "../components/ui/Modal";
 import Input from "../components/ui/Input";
-import { useForm } from "react-hook-form";
+import TextArea from "../components/ui/TextArea";
+import { useForm, Controller } from "react-hook-form";
 import { formatCurrency, formatDate, formatNumber } from "../utils/helpers";
 import Card from "../components/ui/Card";
 import useGetAllProducts from "../hooks/products/useGetAllProducts";
 import { API_CONFIG } from "../config/constants";
 import FilterBar from "../components/ui/FilterBar";
 import useDebounce from "../hooks/global/useDebounce";
+import useGetAllCategories from "../hooks/categories/useGetAllCategories";
+import TagInput from "../components/ui/TagInput";
+
+
 
 const Products = () => {
   const [currentPage, setCurrentPage] = useState(1);
@@ -25,13 +38,23 @@ const Products = () => {
   const [categoryId, setCategoryId] = useState("");
   const { loading, products, stats, totalPages, totalData, itemsPerPage } =
     useGetAllProducts(searchDebounce, status, currentPage, pageSize);
+  const { loading: loadingCategories, categories } = useGetAllCategories(
+    1,
+    200
+  );
 
   const [showModal, setShowModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
+  const [sizes, setSizes] = useState([]);
+  const [colors, setColors] = useState([]);
+  const [sizesError, setSizesError] = useState("");
+  const [colorsError, setColorsError] = useState("");
+
   const {
     register,
     handleSubmit,
     reset,
+    control,
     formState: { errors },
   } = useForm();
 
@@ -85,7 +108,42 @@ const Products = () => {
       sortable: true,
       render: (value) => formatCurrency(value),
     },
-
+    {
+      key: "sizes",
+      label: "Sizes",
+      render: (sizes) => (
+        <div className="flex flex-wrap gap-1">
+          {sizes?.slice(0, 3).map((size, index) => (
+            <Badge key={index} variant="outline" className="text-xs">
+              {size}
+            </Badge>
+          ))}
+          {sizes?.length > 3 && (
+            <Badge variant="outline" className="text-xs">
+              +{sizes.length - 3}
+            </Badge>
+          )}
+        </div>
+      ),
+    },
+    {
+      key: "colors",
+      label: "Colors",
+      render: (colors) => (
+        <div className="flex flex-wrap gap-1">
+          {colors?.slice(0, 3).map((color, index) => (
+            <Badge key={index} variant="outline" className="text-xs">
+              {color}
+            </Badge>
+          ))}
+          {colors?.length > 3 && (
+            <Badge variant="outline" className="text-xs">
+              +{colors.length - 3}
+            </Badge>
+          )}
+        </div>
+      ),
+    },
     {
       key: "isActive",
       label: "Status",
@@ -129,6 +187,20 @@ const Products = () => {
     },
   ];
 
+  const formattedCategories = useMemo(() => {
+    const formattedCategories = categories?.map((category, index) => {
+      return {
+        value: category.name,
+        label: category.name,
+      };
+    });
+
+    return [
+      { value: "", label: `-- Select a Category --`, disabled: true },
+      ...(formattedCategories || []),
+    ];
+  }, [categories]);
+
   const handlePageChange = (page) => {
     if (page) setCurrentPage(page);
   };
@@ -147,12 +219,20 @@ const Products = () => {
 
   const handleAdd = () => {
     setEditingProduct(null);
+    setSizes([]);
+    setColors([]);
+    setSizesError("");
+    setColorsError("");
     reset();
     setShowModal(true);
   };
 
   const handleEdit = (product) => {
     setEditingProduct(product);
+    setSizes(product.sizes || []);
+    setColors(product.colors || []);
+    setSizesError("");
+    setColorsError("");
     reset(product);
     setShowModal(true);
   };
@@ -167,11 +247,43 @@ const Products = () => {
     }
   };
 
+  const handleModalClose = () => {
+    setShowModal(false);
+    setSizes([]);
+    setColors([]);
+    setSizesError("");
+    setColorsError("");
+  };
+
   const onSubmit = (data) => {
+    // Validate sizes and colors
+    let hasErrors = false;
+
+    if (sizes.length === 0) {
+      setSizesError("At least one size is required");
+      hasErrors = true;
+    } else {
+      setSizesError("");
+    }
+
+    if (colors.length === 0) {
+      setColorsError("At least one color is required");
+      hasErrors = true;
+    } else {
+      setColorsError("");
+    }
+
+    // If validation fails, don't submit
+    if (hasErrors) {
+      return;
+    }
+
     const productData = {
       ...data,
       price: parseFloat(data.price),
       stock: parseInt(data.stock),
+      sizes: sizes,
+      colors: colors,
     };
 
     if (editingProduct) {
@@ -189,6 +301,10 @@ const Products = () => {
       setProducts([...products, newProduct]);
     }
     setShowModal(false);
+    setSizes([]);
+    setColors([]);
+    setSizesError("");
+    setColorsError("");
   };
 
   return (
@@ -255,61 +371,129 @@ const Products = () => {
 
         <Modal
           isOpen={showModal}
-          onClose={() => setShowModal(false)}
+          onClose={handleModalClose}
           title={editingProduct ? "Edit Product" : "Add New Product"}
-          size="md"
+          size="lg"
         >
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            <Input
-              label="Product Name"
-              {...register("name", { required: "Product name is required" })}
-              error={errors.name?.message}
-            />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Input
+                label="Product Name"
+                {...register("name", { required: "Product name is required" })}
+                error={errors.name?.message}
+              />
 
-            <Input
-              label="Category"
-              {...register("category", { required: "Category is required" })}
-              error={errors.category?.message}
-            />
+              <Input
+                label="Product Subtitle"
+                {...register("subtitle", {
+                  required: "Product subtitle is required",
+                })}
+                error={errors.subtitle?.message}
+              />
+            </div>
 
-            <Input
-              label="Price"
-              type="number"
-              step="0.01"
-              {...register("price", {
-                required: "Price is required",
-                min: { value: 0, message: "Price must be positive" },
-              })}
-              error={errors.price?.message}
-            />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Input
+                label="Price"
+                type="number"
+                step="0.01"
+                {...register("price", {
+                  required: "Price is required",
+                  min: { value: 0, message: "Price must be positive" },
+                })}
+                error={errors.price?.message}
+              />
 
-            <Input
-              label="Stock"
-              type="number"
-              {...register("stock", {
-                required: "Stock is required",
-                min: { value: 0, message: "Stock must be positive" },
-              })}
-              error={errors.stock?.message}
-            />
+              <Input
+                label="Stock"
+                type="number"
+                {...register("stock", {
+                  required: "Stock is required",
+                  min: { value: 0, message: "Stock must be positive" },
+                })}
+                error={errors.stock?.message}
+              />
+            </div>
 
-            <Select
-              label="Status"
-              options={[
-                { value: "", label: "Select Status" },
-                { value: "active", label: "Active" },
-                { value: "inactive", label: "Inactive" },
-                { value: "out_of_stock", label: "Out of Stock" },
-              ]}
-              {...register("status", { required: "Status is required" })}
-              error={errors.status?.message}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Select
+                label="Category"
+                options={formattedCategories}
+                {...register("category", { required: "Category is required" })}
+                error={errors.category?.message}
+              />
+
+              <Select
+                label="Receiving Option"
+                options={[
+                  { value: "", label: "Select Receiving Option" },
+                  { value: "delivery", label: "Delivery" },
+                  { value: "pickup", label: "Pickup" },
+                ]}
+                {...register("receivingOptions", {
+                  required: "Receiving option is required",
+                })}
+                error={errors.receivingOptions?.message}
+              />
+            </div>
+
+            {/* Sizes and Colors Fields */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <TagInput
+                label="Sizes"
+                value={sizes}
+                onChange={setSizes}
+                placeholder="Enter size (e.g., S, M, L, XL)"
+                error={sizesError}
+                required={true}
+              />
+
+              <TagInput
+                label="Colors"
+                value={colors}
+                onChange={setColors}
+                placeholder="Enter color (e.g., Red, Blue, Green)"
+                error={colorsError}
+                required={true}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Select
+                label="Featured"
+                options={[
+                  { value: false, label: "No" },
+                  { value: true, label: "Yes" },
+                ]}
+                {...register("featured")}
+                error={errors.featured?.message}
+              />
+
+              <Select
+                label="Status"
+                options={[
+                  { value: "", label: "Select Status" },
+                  { value: "active", label: "Active" },
+                  { value: "inactive", label: "Inactive" },
+                ]}
+                {...register("status", { required: "Status is required" })}
+                error={errors.status?.message}
+              />
+            </div>
+
+            <TextArea
+              label="Description"
+              {...register("description")}
+              rows={4}
+              placeholder="Enter product description"
+              error={errors.description?.message}
             />
 
             <div className="flex justify-end space-x-3 pt-4">
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => setShowModal(false)}
+                onClick={handleModalClose}
               >
                 Cancel
               </Button>

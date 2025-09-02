@@ -1,8 +1,8 @@
-import React from 'react'
-import Button from './Button'
-import Input from './Input'
-import Select from './Select'
-import { Filter as FilterIcon, X as XIcon } from 'lucide-react'
+import React from "react";
+import Button from "./Button";
+import Input from "./Input";
+import Select from "./Select";
+import { Filter as FilterIcon, X as XIcon } from "lucide-react";
 
 /**
  * FilterBar - A highly reusable, professional filter bar for any page.
@@ -26,45 +26,47 @@ const FilterBar = ({
   filters = [],
   onClear,
   showClear = true,
-  className = ''
+  className = "",
 }) => {
   return (
     <div className={`flex items-center flex-wrap gap-4 ${className}`}>
       <div className="flex items-center space-x-2">
         <FilterIcon className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Filters:</span>
+        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+          Filters:
+        </span>
       </div>
       {filters.map((filter) => {
-        if (filter.type === 'select') {
+        if (filter.type === "select") {
           return (
             <div key={filter.key} className="min-w-[120px]">
               <label className="sr-only">{filter.label}</label>
               <Select
                 value={filter.value}
-                onChange={e => filter.onChange(e.target.value)}
+                onChange={filter.onChange} // Remove e.target.value since custom Select passes value directly
                 options={[
-                  { value: '', label: `All ${filter.label}` },
-                  ...(filter.options || [])
+                  { value: "", label: `All ${filter.label}` },
+                  ...(filter.options || []),
                 ]}
-                className={`py-1 px-3 text-sm ${filter.className || ''}`}
+                className={`py-1 px-3 text-sm ${filter.className || ""}`}
                 placeholder={filter.placeholder || filter.label}
               />
             </div>
-          )
+          );
         }
-        if (filter.type === 'date') {
+        if (filter.type === "date") {
           return (
             <div key={filter.key} className="min-w-[120px]">
               <label className="sr-only">{filter.label}</label>
               <Input
                 type="date"
                 value={filter.value}
-                onChange={e => filter.onChange(e.target.value)}
+                onChange={(e) => filter.onChange(e.target.value)}
                 placeholder={filter.placeholder || filter.label}
-                className={`${filter.className || ''}`}
+                className={`${filter.className || ""}`}
               />
             </div>
-          )
+          );
         }
         // Default to text input
         return (
@@ -73,12 +75,12 @@ const FilterBar = ({
             <Input
               type="text"
               value={filter.value}
-              onChange={e => filter.onChange(e.target.value)}
+              onChange={(e) => filter.onChange(e.target.value)}
               placeholder={filter.placeholder || filter.label}
-              className={`${filter.className || ''}`}
+              className={`${filter.className || ""}`}
             />
           </div>
-        )
+        );
       })}
       {showClear && (
         <Button
@@ -92,7 +94,7 @@ const FilterBar = ({
         </Button>
       )}
     </div>
-  )
-}
+  );
+};
 
-export default FilterBar
+export default FilterBar;

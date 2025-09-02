@@ -62,9 +62,6 @@ const TagInput = ({
           ))}
         </div>
       )}
-      {error && (
-        <p className="text-sm text-red-500 dark:text-red-400">{error}</p>
-      )}
       <p className="text-xs text-gray-500 dark:text-gray-400">
         Type and press Enter to add {label.toLowerCase()}
       </p>

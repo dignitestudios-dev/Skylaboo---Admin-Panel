@@ -8,6 +8,7 @@ import {
   ShieldX,
   ShieldCheck,
   X,
+  Loader2,
 } from "lucide-react";
 import DataTable from "../components/common/DataTable";
 import Button from "../components/ui/Button";
@@ -19,25 +20,25 @@ import { useForm, Controller } from "react-hook-form";
 import { formatCurrency, formatDate, formatNumber } from "../utils/helpers";
 import Card from "../components/ui/Card";
 import useGetAllProducts from "../hooks/products/useGetAllProducts";
-import { API_CONFIG } from "../config/constants";
+import { API_CONFIG, PAGINATION_CONFIG } from "../config/constants";
 import FilterBar from "../components/ui/FilterBar";
 import useDebounce from "../hooks/global/useDebounce";
 import useGetAllCategories from "../hooks/categories/useGetAllCategories";
 import TagInput from "../components/ui/TagInput";
-
-
+import useProductActions from "../hooks/products/useProductActions";
+import useCreateProduct from "../hooks/products/useCreateProduct";
+import ImageUploader from "../components/ui/ImageUploader";
 
 const Products = () => {
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(
-    API_CONFIG.pagination.defaultPageSize
-  );
+  const [pageSize, setPageSize] = useState(PAGINATION_CONFIG.defaultPageSize);
   const [status, setStatus] = useState("");
   const [search, setSearch] = useState("");
   const searchDebounce = useDebounce(search);
-  const [categoryId, setCategoryId] = useState("");
-  const { loading, products, stats, totalPages, totalData, itemsPerPage } =
+  const { loading, products, stats, totalPages, totalData, getAllProducts } =
     useGetAllProducts(searchDebounce, status, currentPage, pageSize);
+  const { loading: loadingCreateProduct, createProduct } = useCreateProduct();
+  const { loading: loadingUpdateProduct, updateProduct } = useProductActions();
   const { loading: loadingCategories, categories } = useGetAllCategories(
     1,
     200
@@ -45,16 +46,13 @@ const Products = () => {
 
   const [showModal, setShowModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
-  const [sizes, setSizes] = useState([]);
-  const [colors, setColors] = useState([]);
-  const [sizesError, setSizesError] = useState("");
-  const [colorsError, setColorsError] = useState("");
 
   const {
     register,
     handleSubmit,
     reset,
     control,
+    clearErrors, // Add this
     formState: { errors },
   } = useForm();
 
@@ -107,6 +105,14 @@ const Products = () => {
       label: "Price",
       sortable: true,
       render: (value) => formatCurrency(value),
+    },
+    {
+      key: "stock",
+      label: "Stock",
+      sortable: true,
+      render: (value) => {
+        return value ? formatNumber(value) : "N/A";
+      },
     },
     {
       key: "sizes",
@@ -187,16 +193,17 @@ const Products = () => {
     },
   ];
 
+  // For the FilterBar fix, update your formattedCategories to include the category ID:
   const formattedCategories = useMemo(() => {
-    const formattedCategories = categories?.map((category, index) => {
+    const formattedCategories = categories?.map((category) => {
       return {
-        value: category.name,
+        value: category._id, // Use _id instead of name for the value
         label: category.name,
       };
     });
 
     return [
-      { value: "", label: `-- Select a Category --`, disabled: true },
+      { value: "", label: `-- Select a Category --` },
       ...(formattedCategories || []),
     ];
   }, [categories]);
@@ -219,21 +226,30 @@ const Products = () => {
 
   const handleAdd = () => {
     setEditingProduct(null);
-    setSizes([]);
-    setColors([]);
-    setSizesError("");
-    setColorsError("");
     reset();
     setShowModal(true);
   };
 
   const handleEdit = (product) => {
-    setEditingProduct(product);
-    setSizes(product.sizes || []);
-    setColors(product.colors || []);
-    setSizesError("");
-    setColorsError("");
-    reset(product);
+    const receivingOptions =
+      product?.receivingOptions == ["delivery"]
+        ? "delivery"
+        : product?.receivingOptions == ["pickup"]
+        ? "pickup"
+        : "both";
+
+    const formattedProduct = {
+      ...product,
+      receivingOptions: receivingOptions,
+      category: product.category._id,
+      isActive: JSON.stringify(product.isActive), // Convert boolean to string
+    };
+
+    console.log("editing formattedProduct: ", formattedProduct);
+
+    setEditingProduct(formattedProduct);
+
+    reset(formattedProduct);
     setShowModal(true);
   };
 
@@ -249,62 +265,66 @@ const Products = () => {
 
   const handleModalClose = () => {
     setShowModal(false);
-    setSizes([]);
-    setColors([]);
-    setSizesError("");
-    setColorsError("");
+    reset();
   };
 
-  const onSubmit = (data) => {
-    // Validate sizes and colors
-    let hasErrors = false;
+  const onSubmit = async (data) => {
+    // const formData = new FormData();
+    // Object.keys(data).forEach((key) => {
+    //   if (key === "images") {
+    //     data[key].forEach((image) => formData.append("images", image));
+    //   } else {
+    //     formData.append(key, data[key]);
+    //   }
+    // });
 
-    if (sizes.length === 0) {
-      setSizesError("At least one size is required");
-      hasErrors = true;
-    } else {
-      setSizesError("");
-    }
+    const receivingOptions =
+      data.receivingOptions === "delivery"
+        ? ["delivery"]
+        : data.receivingOptions === "pickup"
+        ? ["pickup"]
+        : data.receivingOptions === "both"
+        ? ["delivery", "pickup"]
+        : [];
 
-    if (colors.length === 0) {
-      setColorsError("At least one color is required");
-      hasErrors = true;
-    } else {
-      setColorsError("");
-    }
-
-    // If validation fails, don't submit
-    if (hasErrors) {
-      return;
-    }
-
-    const productData = {
+    const payload = {
       ...data,
-      price: parseFloat(data.price),
-      stock: parseInt(data.stock),
-      sizes: sizes,
-      colors: colors,
+      receivingOptions: receivingOptions,
+      isActive: JSON.parse(data.isActive), // Convert string to boolean
     };
 
-    if (editingProduct) {
-      setProducts(
-        products.map((p) =>
-          p.id === editingProduct.id ? { ...p, ...productData } : p
-        )
-      );
-    } else {
-      const newProduct = {
-        ...productData,
-        id: Math.max(...products.map((p) => p.id)) + 1,
-        createdAt: new Date().toISOString().split("T")[0],
-      };
-      setProducts([...products, newProduct]);
+    try {
+      if (editingProduct) {
+        const productId = editingProduct._id;
+
+        const {
+          _id,
+          images,
+          createdAt,
+          updatedAt,
+          __v,
+          ...editProductPayload
+        } = payload;
+
+        console.log("editProductPayload: ", editProductPayload);
+
+        const success = await updateProduct(productId, editProductPayload);
+        if (success) {
+          reset();
+          setShowModal(false);
+          getAllProducts();
+        }
+      } else {
+        const success = await createProduct(payload);
+        if (success) {
+          reset();
+          setShowModal(false);
+          getAllProducts();
+        }
+      }
+    } catch (error) {
+      console.error("Error creating product:", error);
     }
-    setShowModal(false);
-    setSizes([]);
-    setColors([]);
-    setSizesError("");
-    setColorsError("");
   };
 
   return (
@@ -339,7 +359,7 @@ const Products = () => {
               label: "Status",
               type: "select",
               value: status,
-              onChange: (value) => setStatus(value),
+              onChange: setStatus,
               options: [
                 { value: "active", label: "Active" },
                 { value: "inactive", label: "Inactive" },
@@ -379,8 +399,9 @@ const Products = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Input
                 label="Product Name"
-                {...register("name", { required: "Product name is required" })}
-                error={errors.name?.message}
+                {...register("title", { required: "Product name is required" })}
+                disabled={loadingCreateProduct}
+                error={errors.title?.message}
               />
 
               <Input
@@ -388,6 +409,7 @@ const Products = () => {
                 {...register("subtitle", {
                   required: "Product subtitle is required",
                 })}
+                disabled={loadingCreateProduct}
                 error={errors.subtitle?.message}
               />
             </div>
@@ -401,6 +423,7 @@ const Products = () => {
                   required: "Price is required",
                   min: { value: 0, message: "Price must be positive" },
                 })}
+                disabled={loadingCreateProduct}
                 error={errors.price?.message}
               />
 
@@ -411,94 +434,228 @@ const Products = () => {
                   required: "Stock is required",
                   min: { value: 0, message: "Stock must be positive" },
                 })}
+                disabled={loadingCreateProduct}
                 error={errors.stock?.message}
               />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Select
-                label="Category"
-                options={formattedCategories}
-                {...register("category", { required: "Category is required" })}
-                error={errors.category?.message}
+              <Controller
+                name="category"
+                control={control}
+                disabled={loadingCreateProduct}
+                defaultValue=""
+                rules={{ required: "Category is required" }}
+                render={({ field, fieldState }) => (
+                  <Select
+                    label="Category"
+                    loading={loadingCategories}
+                    searchable
+                    options={formattedCategories}
+                    value={field.value || ""}
+                    onChange={(value) => {
+                      field.onChange(value);
+                      // Clear the error when a value is selected
+                      if (value) {
+                        clearErrors("category");
+                      }
+                    }}
+                    disabled={loadingCreateProduct}
+                    error={fieldState.error?.message}
+                  />
+                )}
               />
 
-              <Select
-                label="Receiving Option"
-                options={[
-                  { value: "", label: "Select Receiving Option" },
-                  { value: "delivery", label: "Delivery" },
-                  { value: "pickup", label: "Pickup" },
-                ]}
-                {...register("receivingOptions", {
-                  required: "Receiving option is required",
-                })}
-                error={errors.receivingOptions?.message}
+              <Controller
+                name="receivingOptions"
+                control={control}
+                disabled={loadingCreateProduct}
+                defaultValue=""
+                rules={{ required: "Receiving option is required" }}
+                render={({ field, fieldState }) => (
+                  <Select
+                    label="Receiving Option"
+                    options={[
+                      { value: "", label: "Select Receiving Option" },
+                      { value: "delivery", label: "Delivery" },
+                      { value: "pickup", label: "Pickup" },
+                      { value: "both", label: "Both Pickup and Delivery" },
+                    ]}
+                    value={field.value || ""}
+                    onChange={(value) => {
+                      field.onChange(value);
+                      // Clear the error when a value is selected
+                      if (value) {
+                        clearErrors("receivingOptions");
+                      }
+                    }}
+                    disabled={loadingCreateProduct}
+                    error={fieldState.error?.message}
+                  />
+                )}
               />
             </div>
 
             {/* Sizes and Colors Fields */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <TagInput
-                label="Sizes"
-                value={sizes}
-                onChange={setSizes}
-                placeholder="Enter size (e.g., S, M, L, XL)"
-                error={sizesError}
-                required={true}
-              />
+              <Controller
+                name="sizes"
+                control={control}
+                disabled={loadingCreateProduct}
+                defaultValue=""
+                rules={{ required: "Size is required" }}
+                render={({ field, fieldState }) => (
+                  <TagInput
+                    label="Sizes"
+                    value={field.value || ""}
+                    onChange={(value) => {
+                      field.onChange(value);
 
-              <TagInput
-                label="Colors"
-                value={colors}
-                onChange={setColors}
-                placeholder="Enter color (e.g., Red, Blue, Green)"
-                error={colorsError}
-                required={true}
+                      // Clear the error when a value is selected
+                      if (value) {
+                        clearErrors("sizes");
+                      }
+                    }}
+                    placeholder="Enter size (e.g., S, M, L, XL)"
+                    error={fieldState.error?.message}
+                    disabled={loadingCreateProduct}
+                    required={true}
+                  />
+                )}
+              />
+              <Controller
+                name="colors"
+                control={control}
+                disabled={loadingCreateProduct}
+                defaultValue=""
+                rules={{ required: "Color is required" }}
+                render={({ field, fieldState }) => (
+                  <TagInput
+                    label="Colors"
+                    value={field.value || ""}
+                    onChange={(value) => {
+                      field.onChange(value);
+
+                      // Clear the error when a value is selected
+                      if (value) {
+                        clearErrors("colors");
+                      }
+                    }}
+                    disabled={loadingCreateProduct}
+                    placeholder="Enter color (e.g., Red, Blue, Green)"
+                    error={fieldState.error?.message}
+                    required={true}
+                  />
+                )}
               />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Select
-                label="Featured"
-                options={[
-                  { value: false, label: "No" },
-                  { value: true, label: "Yes" },
-                ]}
-                {...register("featured")}
-                error={errors.featured?.message}
+              <Controller
+                name="isFeatured"
+                control={control}
+                disabled={loadingCreateProduct}
+                defaultValue={false}
+                render={({ field, fieldState }) => (
+                  <Select
+                    label="Featured"
+                    options={[
+                      { value: false, label: "No" },
+                      { value: true, label: "Yes" },
+                    ]}
+                    value={field.value}
+                    onChange={field.onChange}
+                    disabled={loadingCreateProduct}
+                    error={fieldState.error?.message}
+                  />
+                )}
               />
 
-              <Select
-                label="Status"
-                options={[
-                  { value: "", label: "Select Status" },
-                  { value: "active", label: "Active" },
-                  { value: "inactive", label: "Inactive" },
-                ]}
-                {...register("status", { required: "Status is required" })}
-                error={errors.status?.message}
+              <Controller
+                name="isActive"
+                control={control}
+                disabled={loadingCreateProduct}
+                defaultValue=""
+                rules={{ required: "Status is required" }}
+                render={({ field, fieldState }) => (
+                  <Select
+                    label="Status"
+                    options={[
+                      { value: "", label: "Select Status" },
+                      { value: "true", label: "Active" },
+                      { value: "false", label: "Inactive" },
+                    ]}
+                    value={field.value || ""}
+                    onChange={(value) => {
+                      field.onChange(value);
+                      // Clear the error when a value is selected
+                      if (value) {
+                        clearErrors("isActive");
+                      }
+                    }}
+                    disabled={loadingCreateProduct}
+                    error={fieldState.error?.message}
+                  />
+                )}
               />
             </div>
 
             <TextArea
               label="Description"
-              {...register("description")}
+              {...register("description", {
+                required: "Product description is required",
+              })}
               rows={4}
               placeholder="Enter product description"
               error={errors.description?.message}
+              disabled={loadingCreateProduct}
+            />
+
+            {/* Image Uploader */}
+            <Controller
+              name="images"
+              control={control}
+              defaultValue={[]}
+              render={({ field: { onChange, value }, fieldState }) => (
+                <ImageUploader
+                  onChange={(files) => onChange(files)}
+                  value={value}
+                  label="Product Images"
+                  error={fieldState.error?.message}
+                  disabled={loadingCreateProduct}
+                />
+              )}
             />
 
             <div className="flex justify-end space-x-3 pt-4">
               <Button
                 type="button"
                 variant="outline"
+                disabled={loadingCreateProduct}
                 onClick={handleModalClose}
               >
                 Cancel
               </Button>
-              <Button type="submit">
-                {editingProduct ? "Update Product" : "Create Product"}
+              <Button
+                type="submit"
+                className="h-10 flex items-center gap-2"
+                disabled={loadingCreateProduct || loadingUpdateProduct}
+              >
+                {loadingCreateProduct ? (
+                  <div className="flex items-center justify-center py-12 gap-2">
+                    <Loader2 className={`animate-spin text-white`} />{" "}
+                    <span className="text-white">Creating...</span>
+                  </div>
+                ) : loadingUpdateProduct ? (
+                  <div className="flex items-center justify-center py-12 gap-2">
+                    <Loader2 className={`animate-spin text-white`} />{" "}
+                    <span className="text-white">Updating...</span>
+                  </div>
+                ) : editingProduct ? (
+                  "Update Product"
+                ) : (
+                  "Create Product"
+                )}
               </Button>
             </div>
           </form>

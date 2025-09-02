@@ -128,18 +128,21 @@ const DataTable = ({
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-2">
           <span className="text-sm text-gray-700 dark:text-gray-300">Show</span>
-          <Select
+          <select
+            name="pageSize"
+            id="pageSize"
+            className="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-colors duration-200"
             value={pageSize}
             onChange={(e) =>
               onPageSizeChange && onPageSizeChange(Number(e.target.value))
             }
-            disabled={loading}
-            options={PAGINATION_CONFIG.pageSizeOptions.map((size) => ({
-              value: size,
-              label: size,
-            }))}
-            className="px-2 py-1 text-sm w-20"
-          />
+          >
+            {PAGINATION_CONFIG.pageSizeOptions.map((size) => (
+              <option key={size} value={size}>
+                {size}
+              </option>
+            ))}
+          </select>
           <span className="text-sm text-gray-700 dark:text-gray-300">
             entries
           </span>

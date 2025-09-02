@@ -28,107 +28,111 @@ import UserManagement from "./pages/UserManagement";
 import ChatSupport from "./pages/ChatSupport";
 
 import "./App.css";
-import { toast } from "sonner";
-import { useEffect } from "react";
+import { Toaster } from "react-hot-toast";
 
 function App() {
-  toast.success("hello");
-
   return (
-    <ThemeProvider>
-      <AppProvider>
-        <Router>
-          <AuthProvider>
-            <Routes>
-              {/* Auth Routes */}
-              <Route path="/auth/login" element={<Login />} />
-              <Route
-                path="/auth/forgot-password"
-                element={<ForgotPassword />}
-              />
-              <Route path="/auth/verify-otp" element={<VerifyOTP />} />
-              <Route path="/auth/reset-password" element={<ResetPassword />} />
-              <Route path="/d/docs" element={<Documentation />} />
+    <>
+      <ThemeProvider>
+        <AppProvider>
+          <Router>
+            <AuthProvider>
+              <Routes>
+                {/* Auth Routes */}
+                <Route path="/auth/login" element={<Login />} />
+                <Route
+                  path="/auth/forgot-password"
+                  element={<ForgotPassword />}
+                />
+                <Route path="/auth/verify-otp" element={<VerifyOTP />} />
+                <Route
+                  path="/auth/reset-password"
+                  element={<ResetPassword />}
+                />
+                <Route path="/d/docs" element={<Documentation />} />
 
-              {/* Protected Routes */}
-              <Route
-                path="/*"
-                element={
-                  <ProtectedRoute>
-                    <Layout>
-                      <Routes>
-                        <Route path="/" element={<Dashboard />} />
+                {/* Protected Routes */}
+                <Route
+                  path="/*"
+                  element={
+                    <ProtectedRoute>
+                      <Layout>
+                        <Routes>
+                          <Route path="/" element={<Dashboard />} />
 
-                        <Route path="/dashboard" element={<Dashboard />} />
+                          <Route path="/dashboard" element={<Dashboard />} />
 
-                        <Route path="/products">
-                          <Route path="" element={<Products />} />
-                          <Route
-                            path="categories"
-                            element={
-                              <div className="p-6">
-                                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                                  Product Categories - Coming Soon
-                                </h1>
-                              </div>
-                            }
-                          />
-                        </Route>
+                          <Route path="/products">
+                            <Route path="" element={<Products />} />
+                            <Route
+                              path="categories"
+                              element={
+                                <div className="p-6">
+                                  <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+                                    Product Categories - Coming Soon
+                                  </h1>
+                                </div>
+                              }
+                            />
+                          </Route>
 
-                        <Route path="/orders" element={<Orders />} />
+                          <Route path="/orders" element={<Orders />} />
 
-                        <Route path="/transactions">
-                          <Route path="" element={<Transactions />} />
-                          <Route
-                            path="revenue"
-                            element={
-                              <div className="p-6">
-                                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                                  Revenue Breakdown - Coming Soon
-                                </h1>
-                              </div>
-                            }
-                          />
-                        </Route>
+                          <Route path="/transactions">
+                            <Route path="" element={<Transactions />} />
+                            <Route
+                              path="revenue"
+                              element={
+                                <div className="p-6">
+                                  <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+                                    Revenue Breakdown - Coming Soon
+                                  </h1>
+                                </div>
+                              }
+                            />
+                          </Route>
 
-                        <Route path="/settings">
-                          <Route
-                            path=""
-                            element={
-                              <div className="p-6">
-                                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                                  Settings - Coming Soon
-                                </h1>
-                              </div>
-                            }
-                          />
-                          <Route
-                            path="change-password"
-                            element={<ChangePassword />}
-                          />
-                          <Route
-                            path="general"
-                            element={
-                              <div className="p-6">
-                                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                                  General Settings - Coming Soon
-                                </h1>
-                              </div>
-                            }
-                          />
-                        </Route>
+                          <Route path="/settings">
+                            <Route
+                              path=""
+                              element={
+                                <div className="p-6">
+                                  <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+                                    Settings - Coming Soon
+                                  </h1>
+                                </div>
+                              }
+                            />
+                            <Route
+                              path="change-password"
+                              element={<ChangePassword />}
+                            />
+                            <Route
+                              path="general"
+                              element={
+                                <div className="p-6">
+                                  <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+                                    General Settings - Coming Soon
+                                  </h1>
+                                </div>
+                              }
+                            />
+                          </Route>
 
-                        <Route path="/docs" element={<Documentation />} />
-                      </Routes>
-                    </Layout>
-                  </ProtectedRoute>
-                }
-              />
-            </Routes>
-          </AuthProvider>
-        </Router>
-      </AppProvider>
-    </ThemeProvider>
+                          <Route path="/docs" element={<Documentation />} />
+                        </Routes>
+                      </Layout>
+                    </ProtectedRoute>
+                  }
+                />
+              </Routes>
+            </AuthProvider>
+          </Router>
+        </AppProvider>
+      </ThemeProvider>
+
+      <Toaster position="bottom-right" reverseOrder={false} />
+    </>
   );
 }
 

@@ -1,5 +1,5 @@
 import axios from "axios";
-import { API_CONFIG } from "../config/constants";
+import { API_CONFIG, PAGINATION_CONFIG } from "../config/constants";
 import { handleError } from "../utils/helpers";
 
 // Create an Axios instance
@@ -12,10 +12,10 @@ const API = axios.create({
 // Request Interceptor
 API.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem("token"); // Retrieve token from storage
+    const token = localStorage.getItem("authToken"); // Retrieve token from storage
     console.log("req token: ", token);
     if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+      config.headers.authorization = `Bearer ${token}`;
     }
     return config;
   },
@@ -43,16 +43,14 @@ const handleApiError = (error) => {
       error.response?.data?.message ||
       error.message ||
       "An unexpected error occurred";
-    console.error("API Error:", errorMessage);
-    handleError(errorMessage);
     throw new Error(errorMessage);
   }
-  handleError(error);
   throw new Error(error?.message || error || "An Unexpected error occurred");
 };
 
 const handleApiResponse = (response) => {
   const responseData = response.data;
+  console.log("API response run");
 
   // Check if success is false and throw an error
   if (!responseData.success) {
@@ -76,11 +74,14 @@ const apiHandler = async (apiCall) => {
 // Centralized API Handling functions end
 
 // Products API
+const createProduct = (productData) =>
+  apiHandler(() => API.post(`/product`, productData));
+
 const getAllProducts = (
   search,
   status,
   page = 1,
-  limit = API_CONFIG.pagination.defaultPageSize
+  limit = PAGINATION_CONFIG.defaultPageSize
 ) =>
   apiHandler(() =>
     API.get(
@@ -88,13 +89,54 @@ const getAllProducts = (
     )
   );
 
+const updateProduct = (id, productData) =>
+  apiHandler(() => API.put(`/product/${id}`, productData));
+
+const deleteProduct = (id) => apiHandler(() => API.delete(`/product/${id}`));
+
+const getProductById = (id) => apiHandler(() => API.get(`/product/${id}`));
+
 // Categories API
+const createCategory = (categoryData) =>
+  apiHandler(() => API.post(`/category`, categoryData));
+
 const getAllCategories = (
   page = 1,
-  limit = API_CONFIG.pagination.defaultPageSize
+  limit = PAGINATION_CONFIG.defaultPageSize
 ) => apiHandler(() => API.get(`/category?page=${page}&limit=${limit}`));
+
+const updateCategory = (id, categoryData) =>
+  apiHandler(() => API.put(`/category/${id}`, categoryData));
+
+const deleteCategory = (id) => apiHandler(() => API.delete(`/category/${id}`));
+
+const getCategoryById = (id) => apiHandler(() => API.get(`/category/${id}`));
+
+// Orders API
+const getOrders = (page = 1, limit = API_CONFIG.pagination.defaultPageSize) =>
+  apiHandler(() => API.get(`/order?page=${page}&limit=${limit}`));
+
+const getOrdersByContact = (contactEmail) =>
+  apiHandler(() => API.get(`/order/contact?email=${contactEmail}`));
+
+const getOrderById = (id) => apiHandler(() => API.get(`/order/${id}`));
+
+const updateOrder = (id, orderData) =>
+  apiHandler(() => API.put(`/order/${id}`, orderData));
 
 export const api = {
   getAllProducts,
   getAllCategories,
+  createProduct,
+  createCategory,
+  updateProduct,
+  deleteProduct,
+  getProductById,
+  updateCategory,
+  deleteCategory,
+  getCategoryById,
+  getOrders,
+  getOrdersByContact,
+  getOrderById,
+  updateOrder,
 };

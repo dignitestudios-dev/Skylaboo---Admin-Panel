@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { toast } from "sonner";
+import { handleError } from "../../utils/helpers";
 
 const useGetAllUsers = (filters, search, limit) => {
   const [users, setUsers] = useState([]);
@@ -1514,9 +1514,9 @@ const useGetAllUsers = (filters, search, limit) => {
       await new Promise((resolve) => setTimeout(resolve, 1000));
       setUsers(dummyData);
     } catch (error) {
-      toast.error(error.message || "Something went wrong");
+      handleError(error);
     } finally {
-        setLoading(false)
+      setLoading(false);
     }
   };
 

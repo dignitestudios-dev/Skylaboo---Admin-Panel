@@ -13,7 +13,7 @@ const useGetAllProducts = (search, status, page, limit) => {
   const [totalPages, setTotalPages] = useState(1);
   const [totalData, setTotalData] = useState(0);
 
-  const getAllProducts = async (req, res) => {
+  const getAllProducts = async () => {
     setLoading(true);
 
     try {
@@ -33,7 +33,7 @@ const useGetAllProducts = (search, status, page, limit) => {
     getAllProducts();
   }, [page, limit, search, status]);
 
-  return { loading, products, totalPages, totalData, stats };
+  return { loading, products, totalPages, totalData, stats, getAllProducts };
 };
 
 export default useGetAllProducts;

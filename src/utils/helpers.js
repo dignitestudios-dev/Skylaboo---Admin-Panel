@@ -1,4 +1,4 @@
-import { toast } from "sonner";
+import toast from "react-hot-toast";
 import { DATE_CONFIG } from "../config/constants";
 
 // Date formatting utilities
@@ -124,6 +124,7 @@ export const deepClone = (obj) => {
 };
 
 export const handleError = (error) => {
+  console.log("handle Error run: ",error)
   toast.error(
     error?.message || error?.response?.data?.message || "Something went wrong"
   );

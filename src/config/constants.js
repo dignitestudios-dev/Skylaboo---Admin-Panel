@@ -40,13 +40,15 @@ export const THEME_OPTIONS = {
 
 // API Configuration
 export const API_CONFIG = {
-  baseURL: import.meta.env.VITE_BASE_URL || "http://localhost:8080/",
+  baseURL: import.meta.env.VITE_BASE_URL || "http://localhost:8080",
   timeout: 10000,
   headers: {
     "Content-Type": "application/json",
   },
-  pagination: {
-    defaultPageSize: 10, //5, 10, 20, 50, 100
+  formDataHeaders: {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
   },
   // Stripe Configuration (for revenue tracking)
   stripe: {
@@ -58,7 +60,7 @@ export const API_CONFIG = {
 
 // Pagination Configuration
 export const PAGINATION_CONFIG = {
-  defaultPageSize: 10,
+  defaultPageSize: 20,
   pageSizeOptions: [5, 10, 20, 50, 100],
   maxVisiblePages: 5,
 };

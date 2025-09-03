@@ -127,13 +127,13 @@ const Transactions = () => {
     {
       key: "id",
       label: "Transaction ID",
-      sortable: true,
+
       render: (value) => <span className="font-mono text-sm">{value}</span>,
     },
     {
       key: "userName",
       label: "Customer",
-      sortable: true,
+
       render: (value, transaction) => (
         <div>
           <p className="font-medium text-gray-900 dark:text-white">{value}</p>
@@ -144,7 +144,7 @@ const Transactions = () => {
     {
       key: "amount",
       label: "Amount",
-      sortable: true,
+
       render: (value, transaction) => (
         <div className="text-right">
           <p
@@ -189,7 +189,6 @@ const Transactions = () => {
     {
       key: "createdAt",
       label: "Date",
-      sortable: true,
       render: (value) => (
         <div>
           <p className="text-sm">{new Date(value).toLocaleDateString()}</p>
@@ -202,7 +201,6 @@ const Transactions = () => {
     {
       key: "actions",
       label: "Actions",
-      sortable: false,
       render: (_, transaction) => (
         <div className="flex items-center space-x-2">
           <Button

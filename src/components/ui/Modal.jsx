@@ -67,7 +67,7 @@ const Modal = ({
         <div
           className={`inline-block w-full ${
             sizes[size]
-          } p-6 my-8 overflow-hidden text-left align-middle transition-all duration-200 ease-out transform bg-white dark:bg-gray-800 shadow-xl rounded-lg ${
+          } p-6 my-8 text-left align-middle transition-all duration-200 ease-out transform bg-white dark:bg-gray-800 shadow-xl rounded-lg ${
             isAnimating
               ? "opacity-0 scale-95 translate-y-4"
               : "opacity-100 scale-100 translate-y-0"

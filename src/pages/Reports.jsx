@@ -98,13 +98,13 @@ const Reports = () => {
     {
       key: "id",
       label: "Report ID",
-      sortable: true,
+
       render: (value) => <span className="font-mono text-sm">{value}</span>,
     },
     {
       key: "userName",
       label: "Reporter",
-      sortable: true,
+
       render: (value, report) => (
         <div className="flex items-center space-x-3">
           <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
@@ -122,7 +122,7 @@ const Reports = () => {
     {
       key: "reportedUserName",
       label: "Reported User",
-      sortable: true,
+
       render: (value, report) => (
         <div className="flex items-center space-x-3">
           <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
@@ -140,7 +140,7 @@ const Reports = () => {
     {
       key: "subject",
       label: "Subject",
-      sortable: true,
+
       render: (value, report) => (
         <div>
           <p className="font-medium text-gray-900 dark:text-white">{value}</p>
@@ -192,7 +192,7 @@ const Reports = () => {
     {
       key: "createdAt",
       label: "Reported",
-      sortable: true,
+
       render: (value) => (
         <div>
           <p className="text-sm">{new Date(value).toLocaleDateString()}</p>
@@ -205,7 +205,6 @@ const Reports = () => {
     {
       key: "actions",
       label: "Actions",
-      sortable: false,
       render: (_, report) => (
         <div className="flex items-center space-x-2">
           <Button

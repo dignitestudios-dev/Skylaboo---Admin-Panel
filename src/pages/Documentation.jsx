@@ -571,9 +571,9 @@ const MyComponent = () => {
 {`import DataTable from '../components/common/DataTable'
 
 const columns = [
-  { key: 'name', label: 'Name', sortable: true },
-  { key: 'email', label: 'Email', sortable: true },
-  { key: 'status', label: 'Status', sortable: false }
+  { key: 'name', label: 'Name',  },
+  { key: 'email', label: 'Email',  },
+  { key: 'status', label: 'Status',  }
 ]
 
 const data = [
@@ -596,9 +596,9 @@ const data = [
                   onClick={() => copyToClipboard(`import DataTable from '../components/common/DataTable'
 
 const columns = [
-  { key: 'name', label: 'Name', sortable: true },
-  { key: 'email', label: 'Email', sortable: true },
-  { key: 'status', label: 'Status', sortable: false }
+  { key: 'name', label: 'Name',  },
+  { key: 'email', label: 'Email',  },
+  { key: 'status', label: 'Status',  }
 ]
 
 const data = [

@@ -1,14 +1,48 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { handleError } from "../../utils/helpers";
 import { api } from "../../lib/services";
 
-const useOrderActions = () => {
+const useOrderActions = (
+  paymentStatus,
+  orderStatus,
+  orderType,
+  startDate,
+  endDate,
+  search,
+  page,
+  limit
+) => {
   const [loading, setLoading] = useState(false);
+  const [loadingActions, setLoadingActions] = useState(false);
+  const [orders, setOrders] = useState([]);
+  const [stats, setStats] = useState({
+    totalOrders: 0,
+    pendingOrders: 0,
+    processingOrders: 0,
+    shippedOrders: 0,
+    deliveredOrders: 0,
+    totalRevenue: 0,
+  });
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalData, setTotalData] = useState(0);
 
-  const getOrders = async (page, limit) => {
+  const getOrders = async () => {
     setLoading(true);
     try {
-      return await api.getOrders(page, limit);
+      const response = await api.getOrders(
+        paymentStatus,
+        orderStatus,
+        orderType,
+        startDate,
+        endDate,
+        search,
+        page,
+        limit
+      );
+      setOrders(response.data.orders);
+      setStats(response.data.stats);
+      setTotalPages(response.pagination.totalPages);
+      setTotalData(response.pagination.totalItems);
     } catch (error) {
       handleError(error);
     } finally {
@@ -16,40 +50,66 @@ const useOrderActions = () => {
     }
   };
 
+  useEffect(() => {
+    getOrders();
+  }, [
+    paymentStatus,
+    orderStatus,
+    orderType,
+    startDate,
+    endDate,
+    search,
+    page,
+    limit,
+  ]);
+
   const getOrdersByContact = async (contactEmail) => {
-    setLoading(true);
+    setLoadingActions(true);
     try {
       return await api.getOrdersByContact(contactEmail);
     } catch (error) {
       handleError(error);
     } finally {
-      setLoading(false);
+      setLoadingActions(false);
     }
   };
 
   const getOrderById = async (id) => {
-    setLoading(true);
+    setLoadingActions(true);
     try {
       return await api.getOrderById(id);
     } catch (error) {
       handleError(error);
     } finally {
-      setLoading(false);
+      setLoadingActions(false);
     }
   };
 
   const updateOrder = async (id, orderData) => {
-    setLoading(true);
+    setLoadingActions(true);
     try {
-      await api.updateOrder(id, orderData);
+      const response = await api.updateOrder(id, orderData);
+      setLoadingActions(false);
+      return response.success;
     } catch (error) {
       handleError(error);
-    } finally {
-      setLoading(false);
+      setLoadingActions(false);
+      return false;
     }
   };
 
-  return { loading, getOrders, getOrdersByContact, getOrderById, updateOrder };
+  return {
+    loading,
+    loadingActions,
+    orders,
+    stats,
+    totalPages,
+    totalData,
+    getOrders,
+    getOrdersByContact,
+    getOrderById,
+    updateOrder,
+  };
 };
 
 export default useOrderActions;

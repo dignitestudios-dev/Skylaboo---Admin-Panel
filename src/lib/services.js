@@ -101,9 +101,13 @@ const createCategory = (categoryData) =>
   apiHandler(() => API.post(`/category`, categoryData));
 
 const getAllCategories = (
+  status, // active or inactive
   page = 1,
   limit = PAGINATION_CONFIG.defaultPageSize
-) => apiHandler(() => API.get(`/category?page=${page}&limit=${limit}`));
+) =>
+  apiHandler(() =>
+    API.get(`/category?status=${status}&page=${page}&limit=${limit}`)
+  );
 
 const updateCategory = (id, categoryData) =>
   apiHandler(() => API.put(`/category/${id}`, categoryData));
@@ -113,8 +117,21 @@ const deleteCategory = (id) => apiHandler(() => API.delete(`/category/${id}`));
 const getCategoryById = (id) => apiHandler(() => API.get(`/category/${id}`));
 
 // Orders API
-const getOrders = (page = 1, limit = API_CONFIG.pagination.defaultPageSize) =>
-  apiHandler(() => API.get(`/order?page=${page}&limit=${limit}`));
+const getOrders = (
+  paymentStatus,
+  orderStatus,
+  orderType,
+  startDate,
+  endDate,
+  search,
+  page = 1,
+  limit = API_CONFIG.pagination.defaultPageSize
+) =>
+  apiHandler(() =>
+    API.get(
+      `/order?paymentStatus=${paymentStatus}&orderStatus=${orderStatus}&orderType=${orderType}&startDate=${startDate}&endDate=${endDate}&search=${search}&page=${page}&limit=${limit}`
+    )
+  );
 
 const getOrdersByContact = (contactEmail) =>
   apiHandler(() => API.get(`/order/contact?email=${contactEmail}`));

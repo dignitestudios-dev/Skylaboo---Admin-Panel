@@ -52,12 +52,11 @@ const UserManagement = () => {
     {
       key: "id",
       label: "ID",
-      sortable: true,
     },
     {
       key: "name",
       label: "Name",
-      sortable: true,
+
       render: (value, user) => (
         <div className="flex items-center space-x-3">
           <div className="w-8 h-8 bg-primary-100 rounded-full flex items-center justify-center">
@@ -111,7 +110,7 @@ const UserManagement = () => {
     {
       key: "totalTransactions",
       label: "Transactions",
-      sortable: true,
+
       render: (value, user) => (
         <div>
           <p className="font-medium">{value}</p>
@@ -122,7 +121,7 @@ const UserManagement = () => {
     {
       key: "lastLogin",
       label: "Last Login",
-      sortable: true,
+
       render: (value) => (
         <div>
           <p className="text-sm">{formatDate(value)}</p>
@@ -135,13 +134,12 @@ const UserManagement = () => {
     {
       key: "createdAt",
       label: "Joined",
-      sortable: true,
+
       render: (value) => formatDate(value),
     },
     {
       key: "actions",
       label: "Actions",
-      sortable: false,
       render: (_, user) => (
         <div className="flex items-center space-x-2">
           <Button

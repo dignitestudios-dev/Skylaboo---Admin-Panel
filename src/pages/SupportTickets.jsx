@@ -106,13 +106,13 @@ const SupportTickets = () => {
     {
       key: "id",
       label: "Ticket ID",
-      sortable: true,
+
       render: (value) => <span className="font-mono text-sm">{value}</span>,
     },
     {
       key: "userName",
       label: "Customer",
-      sortable: true,
+
       render: (value, ticket) => (
         <div className="flex items-center space-x-3">
           <div className="w-8 h-8 bg-primary-100 rounded-full flex items-center justify-center">
@@ -130,7 +130,7 @@ const SupportTickets = () => {
     {
       key: "subject",
       label: "Subject",
-      sortable: true,
+
       render: (value, ticket) => (
         <div>
           <p className="font-medium text-gray-900 dark:text-white">{value}</p>
@@ -188,7 +188,7 @@ const SupportTickets = () => {
     {
       key: "createdAt",
       label: "Created",
-      sortable: true,
+
       render: (value) => (
         <div>
           <p className="text-sm">{new Date(value).toLocaleDateString()}</p>
@@ -201,7 +201,6 @@ const SupportTickets = () => {
     {
       key: "actions",
       label: "Actions",
-      sortable: false,
       render: (_, ticket) => (
         <div className="flex items-center space-x-2">
           <Button

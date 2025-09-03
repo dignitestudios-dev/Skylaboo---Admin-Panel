@@ -9,6 +9,9 @@ import {
   ShieldCheck,
   X,
   Loader2,
+  Truck,
+  MapPin,
+  Star,
 } from "lucide-react";
 import DataTable from "../components/common/DataTable";
 import Button from "../components/ui/Button";
@@ -28,6 +31,7 @@ import TagInput from "../components/ui/TagInput";
 import useProductActions from "../hooks/products/useProductActions";
 import useCreateProduct from "../hooks/products/useCreateProduct";
 import ImageUploader from "../components/ui/ImageUploader";
+import ImagesGallery from "../components/ui/ImagesGallery";
 
 const Products = () => {
   const [currentPage, setCurrentPage] = useState(1);
@@ -35,17 +39,42 @@ const Products = () => {
   const [status, setStatus] = useState("");
   const [search, setSearch] = useState("");
   const searchDebounce = useDebounce(search);
+
+  // Product hooks
   const { loading, products, stats, totalPages, totalData, getAllProducts } =
     useGetAllProducts(searchDebounce, status, currentPage, pageSize);
   const { loading: loadingCreateProduct, createProduct } = useCreateProduct();
-  const { loading: loadingUpdateProduct, updateProduct } = useProductActions();
+  const {
+    loading: loadingProductActions,
+    updateProduct,
+    deleteProduct,
+  } = useProductActions();
   const { loading: loadingCategories, categories } = useGetAllCategories(
+    "active",
     1,
     200
   );
 
   const [showModal, setShowModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
+
+  const [showViewProductModal, setShowViewProductModal] = useState(false);
+  const [viewingProduct, setViewingProduct] = useState(null);
+
+  const defaultValues = {
+    title: "",
+    subtitle: "",
+    description: "",
+    price: null,
+    stock: null,
+    category: null,
+    images: [],
+    isActive: "",
+    isFeatured: false,
+    colors: [],
+    sizes: [],
+    receivingOptions: "",
+  };
 
   const {
     register,
@@ -54,7 +83,7 @@ const Products = () => {
     control,
     clearErrors, // Add this
     formState: { errors },
-  } = useForm();
+  } = useForm({ defaultValues });
 
   const productStats = useMemo(
     () => [
@@ -87,29 +116,27 @@ const Products = () => {
     {
       key: "_id",
       label: "ID",
-      sortable: true,
     },
     {
       key: "title",
       label: "Product Name",
-      sortable: true,
     },
     {
       key: "category",
       label: "Category",
-      sortable: true,
+
       render: (value) => value.name,
     },
     {
       key: "price",
       label: "Price",
-      sortable: true,
+
       render: (value) => formatCurrency(value),
     },
     {
       key: "stock",
       label: "Stock",
-      sortable: true,
+
       render: (value) => {
         return value ? formatNumber(value) : "N/A";
       },
@@ -167,7 +194,7 @@ const Products = () => {
     {
       key: "actions",
       label: "Actions",
-      sortable: false,
+
       render: (_, product) => (
         <div className="flex items-center space-x-2">
           <Button
@@ -185,7 +212,8 @@ const Products = () => {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => handleDelete(product)}
+            onClick={() => handleDelete(product._id)}
+            disabled={loadingProductActions}
             icon={<Trash2 className="w-4 h-4" />}
           />
         </div>
@@ -226,7 +254,7 @@ const Products = () => {
 
   const handleAdd = () => {
     setEditingProduct(null);
-    reset();
+    reset(defaultValues);
     setShowModal(true);
   };
 
@@ -254,18 +282,21 @@ const Products = () => {
   };
 
   const handleView = (product) => {
-    alert(`Viewing product: ${product.name}`);
+    setViewingProduct(product);
+    setShowViewProductModal(true);
   };
 
-  const handleDelete = (product) => {
-    if (confirm(`Are you sure you want to delete ${product.name}?`)) {
-      setProducts(products.filter((p) => p.id !== product.id));
+  const handleDelete = async (productId) => {
+    console.log(productId);
+    const success = await deleteProduct(productId);
+    if (success) {
+      getAllProducts();
     }
   };
 
   const handleModalClose = () => {
     setShowModal(false);
-    reset();
+    reset(defaultValues);
   };
 
   const onSubmit = async (data) => {
@@ -310,14 +341,14 @@ const Products = () => {
 
         const success = await updateProduct(productId, editProductPayload);
         if (success) {
-          reset();
+          reset(defaultValues);
           setShowModal(false);
           getAllProducts();
         }
       } else {
         const success = await createProduct(payload);
         if (success) {
-          reset();
+          reset(defaultValues);
           setShowModal(false);
           getAllProducts();
         }
@@ -639,14 +670,14 @@ const Products = () => {
               <Button
                 type="submit"
                 className="h-10 flex items-center gap-2"
-                disabled={loadingCreateProduct || loadingUpdateProduct}
+                disabled={loadingCreateProduct || loadingProductActions}
               >
                 {loadingCreateProduct ? (
                   <div className="flex items-center justify-center py-12 gap-2">
                     <Loader2 className={`animate-spin text-white`} />{" "}
                     <span className="text-white">Creating...</span>
                   </div>
-                ) : loadingUpdateProduct ? (
+                ) : loadingProductActions ? (
                   <div className="flex items-center justify-center py-12 gap-2">
                     <Loader2 className={`animate-spin text-white`} />{" "}
                     <span className="text-white">Updating...</span>
@@ -659,6 +690,168 @@ const Products = () => {
               </Button>
             </div>
           </form>
+        </Modal>
+
+        <Modal
+          isOpen={showViewProductModal}
+          onClose={() => setShowViewProductModal(false)}
+          title={
+            viewingProduct?.title ? viewingProduct?.title : "Product Details"
+          }
+          size="xl"
+        >
+          <div className="grid lg:grid-cols-2 gap-8">
+            {/* Left Column - Images */}
+            <div>
+              <ImagesGallery images={viewingProduct?.images} />
+            </div>
+
+            {/* Right Column - Product Details */}
+            <div className="space-y-6">
+              {/* Header */}
+              <div className="border-b border-gray-200 dark:border-gray-700 pb-4">
+                <div className="flex items-start justify-between mb-2">
+                  <div>
+                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+                      {viewingProduct?.title}
+                    </h1>
+                    <p className="text-lg text-gray-600 dark:text-gray-300 mt-1">
+                      {viewingProduct?.subtitle}
+                    </p>
+                  </div>
+                  <div
+                    className={`px-3 py-1 rounded-full text-sm font-medium ${
+                      viewingProduct?.isActive
+                        ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                        : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
+                    }`}
+                  >
+                    {viewingProduct?.isActive ? "Active" : "Inactive"}
+                  </div>
+                </div>
+
+                <div className="flex items-center space-x-4">
+                  <span className="text-3xl font-bold text-primary-600 dark:text-primary-400">
+                    ${viewingProduct?.price}
+                  </span>
+                  {viewingProduct?.isFeatured && (
+                    <div className="flex items-center text-yellow-500">
+                      <Star className="w-5 h-5 fill-current" />
+                      <span className="ml-1 text-sm font-medium">Featured</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Description */}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                  Description
+                </h3>
+                <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
+                  {viewingProduct?.description}
+                </p>
+              </div>
+
+              {/* Product Details Grid */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                  <h4 className="font-semibold text-gray-900 dark:text-white mb-2">
+                    Category
+                  </h4>
+                  <p className="text-gray-600 dark:text-gray-300">
+                    {viewingProduct?.category?.name}
+                  </p>
+                </div>
+
+                <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                  <h4 className="font-semibold text-gray-900 dark:text-white mb-2">
+                    Stock
+                  </h4>
+                  <p className="text-gray-600 dark:text-gray-300">
+                    {viewingProduct?.stock} units
+                  </p>
+                </div>
+              </div>
+
+              {/* Colors */}
+              {viewingProduct?.colors && viewingProduct.colors.length > 0 && (
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
+                    Available Colors
+                  </h3>
+                  <div className="flex flex-wrap gap-2">
+                    {viewingProduct.colors.map((color, index) => (
+                      <span
+                        key={index}
+                        className="px-3 py-1 bg-primary-100/20 text-primary-600 rounded-full text-sm font-medium"
+                      >
+                        {color}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Sizes */}
+              {viewingProduct?.sizes && viewingProduct.sizes.length > 0 && (
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
+                    Available Sizes
+                  </h3>
+                  <div className="flex flex-wrap gap-2">
+                    {viewingProduct.sizes.map((size, index) => (
+                      <Badge key={index} variant="default">
+                        {size}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Receiving Options */}
+              {viewingProduct?.receivingOptions &&
+                viewingProduct.receivingOptions.length > 0 && (
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
+                      Receiving Options
+                    </h3>
+                    <div className="flex gap-3">
+                      {viewingProduct.receivingOptions.map((option, index) => (
+                        <div
+                          key={index}
+                          className="flex items-center space-x-2 bg-gray-50 dark:bg-gray-800 px-3 py-2 rounded-lg"
+                        >
+                          {option === "delivery" ? (
+                            <Truck className="w-4 h-4 text-primary-500" />
+                          ) : (
+                            <MapPin className="w-4 h-4 text-secondary-500" />
+                          )}
+                          <span className="text-sm font-medium capitalize text-gray-700 dark:text-gray-300">
+                            {option}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+              {/* Metadata */}
+              <div className="border-t border-gray-200 dark:border-gray-700 pt-4 text-sm text-gray-500 dark:text-gray-400 space-y-1">
+                <p>
+                  <strong>Created:</strong>{" "}
+                  {formatDate(viewingProduct?.createdAt)}
+                </p>
+                <p>
+                  <strong>Last Updated:</strong>{" "}
+                  {formatDate(viewingProduct?.updatedAt)}
+                </p>
+                <p>
+                  <strong>Product ID:</strong> {viewingProduct?._id}
+                </p>
+              </div>
+            </div>
+          </div>
         </Modal>
       </div>
     </div>

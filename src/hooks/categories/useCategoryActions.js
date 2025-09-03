@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { handleError } from "../../utils/helpers";
+import { handleError, handleSuccess } from "../../utils/helpers";
 import { api } from "../../lib/services";
 
 const useCategoryActions = () => {
@@ -8,22 +8,30 @@ const useCategoryActions = () => {
   const updateCategory = async (id, categoryData) => {
     setLoading(true);
     try {
-      await api.updateCategory(id, categoryData);
+      const response = await api.updateCategory(id, categoryData);
+
+      setLoading(false);
+      handleSuccess(response.message, "Category updated successfully");
+      return response.success;
     } catch (error) {
       handleError(error);
-    } finally {
       setLoading(false);
+      return false;
     }
   };
 
   const deleteCategory = async (id) => {
     setLoading(true);
     try {
-      await api.deleteCategory(id);
+      const response = await api.deleteCategory(id);
+
+      setLoading(false);
+      handleSuccess(response.message, "Category deleted successfully");
+      return response.success;
     } catch (error) {
       handleError(error);
-    } finally {
       setLoading(false);
+      return false;
     }
   };
 

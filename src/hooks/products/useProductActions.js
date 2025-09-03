@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { handleError } from "../../utils/helpers";
+import { handleError, handleSuccess } from "../../utils/helpers";
 import { api } from "../../lib/services";
 
 const useProductActions = () => {
@@ -10,6 +10,7 @@ const useProductActions = () => {
     try {
       const response = await api.updateProduct(id, productData);
       setLoading(false);
+      handleSuccess(response.message, "Product updated successfully");
       return response.success;
     } catch (error) {
       handleError(error);
@@ -21,11 +22,14 @@ const useProductActions = () => {
   const deleteProduct = async (id) => {
     setLoading(true);
     try {
-      await api.deleteProduct(id);
+      const response = await api.deleteProduct(id);
+      setLoading(false);
+      handleSuccess(response.message, "Product deleted successfully");
+      return response.success;
     } catch (error) {
       handleError(error);
-    } finally {
       setLoading(false);
+      return false;
     }
   };
 

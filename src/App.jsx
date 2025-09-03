@@ -29,6 +29,7 @@ import ChatSupport from "./pages/ChatSupport";
 
 import "./App.css";
 import { Toaster } from "react-hot-toast";
+import Categories from "./pages/Categories";
 
 function App() {
   return (
@@ -64,16 +65,7 @@ function App() {
 
                           <Route path="/products">
                             <Route path="" element={<Products />} />
-                            <Route
-                              path="categories"
-                              element={
-                                <div className="p-6">
-                                  <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                                    Product Categories - Coming Soon
-                                  </h1>
-                                </div>
-                              }
-                            />
+                            <Route path="categories" element={<Categories />} />
                           </Route>
 
                           <Route path="/orders" element={<Orders />} />

@@ -30,6 +30,7 @@ import ChatSupport from "./pages/ChatSupport";
 import "./App.css";
 import { Toaster } from "react-hot-toast";
 import Categories from "./pages/Categories";
+import Configurations from "./pages/Configurations";
 
 function App() {
   return (
@@ -70,27 +71,13 @@ function App() {
 
                           <Route path="/orders" element={<Orders />} />
 
-                          <Route path="/transactions">
-                            <Route path="" element={<Transactions />} />
-                            <Route
-                              path="revenue"
-                              element={
-                                <div className="p-6">
-                                  <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                                    Revenue Breakdown - Coming Soon
-                                  </h1>
-                                </div>
-                              }
-                            />
-                          </Route>
-
                           <Route path="/settings">
                             <Route
                               path=""
                               element={
                                 <div className="p-6">
                                   <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                                    Settings - Coming Soon
+                                    Settings
                                   </h1>
                                 </div>
                               }
@@ -100,14 +87,8 @@ function App() {
                               element={<ChangePassword />}
                             />
                             <Route
-                              path="general"
-                              element={
-                                <div className="p-6">
-                                  <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                                    General Settings - Coming Soon
-                                  </h1>
-                                </div>
-                              }
+                              path="configs"
+                              element={<Configurations />}
                             />
                           </Route>
 

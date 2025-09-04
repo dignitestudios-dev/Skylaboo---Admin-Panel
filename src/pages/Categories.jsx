@@ -34,6 +34,7 @@ import ImageUploader from "../components/ui/ImageUploader";
 import ImagesGallery from "../components/ui/ImagesGallery";
 import useCategoryActions from "../hooks/categories/useCategoryActions";
 import useCreateCategory from "../hooks/categories/useCreateCategory";
+import StatsCard from "../components/common/StatsCard";
 
 const Categories = () => {
   const [currentPage, setCurrentPage] = useState(1);
@@ -228,21 +229,14 @@ const Categories = () => {
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         {categoryStats?.map((stat, index) => (
-          <Card key={index} className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                  {stat.title}
-                </p>
-                <p className={`text-2xl font-bold ${stat.color}`}>
-                  {stat.value}
-                </p>
-              </div>
-              <div className={`p-3 ${stat.bgColor} rounded-lg`}>
-                <stat.icon className={`w-6 h-6 ${stat.color}`} />
-              </div>
-            </div>
-          </Card>
+          <StatsCard
+            key={index}
+            title={stat.title}
+            value={stat.value}
+            icon={stat.icon ? <stat.icon /> : null}
+            colored
+            index={index}
+          />
         ))}
       </div>
 

@@ -41,6 +41,20 @@ export const formatNumber = (num) => {
   return new Intl.NumberFormat("en-US").format(num);
 };
 
+export const formatPercentage = (num, fractionDigits = 2) => {
+  return num
+    ? num > 0
+      ? `+${num?.toFixed(fractionDigits)}%`
+      : `${num?.toFixed(fractionDigits)}%`
+    : "0%";
+};
+
+export const getTrend = (num) => {
+  if (num > 0) return "up";
+  if (num < 0) return "down";
+  return "neutral";
+}
+
 // Array utilities
 export const sortBy = (array, key, direction = "asc") => {
   return [...array].sort((a, b) => {

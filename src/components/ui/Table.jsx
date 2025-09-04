@@ -7,10 +7,10 @@ const Table = ({
   className = "",
 }) => {
   return (
-    <div className={`overflow-x-auto ${className}`}>
+    <div className={`overflow-x-auto ${className} max-h-[70vh] relative`}>
       <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-        <thead className="bg-gray-50 dark:bg-gray-900">
-          <tr>
+        <thead className="sticky top-0 left-0 bg-white dark:bg-gray-900 z-10">
+          <tr className="shadow-sm shadow-gray-300 dark:shadow-black">
             {columns.map((column) => (
               <th
                 key={column.key}

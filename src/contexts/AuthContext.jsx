@@ -33,24 +33,13 @@ export const AuthProvider = ({ children }) => {
         if (token && userData) {
           const parsedUser = JSON.parse(userData);
 
-          // Check if token is expired
-          const tokenExpiry = localStorage.getItem("tokenExpiry");
-          if (tokenExpiry && new Date() > new Date(tokenExpiry)) {
-            // Token expired, clear auth data
-            localStorage.removeItem("authToken");
-            localStorage.removeItem("userData");
-            localStorage.removeItem("tokenExpiry");
-            setUser(null);
-          } else {
-            setUser(parsedUser);
-          }
+          setUser(parsedUser);
         }
       } catch (error) {
         console.error("Auth initialization error:", error);
         // Clear corrupted auth data
         localStorage.removeItem("authToken");
         localStorage.removeItem("userData");
-        localStorage.removeItem("tokenExpiry");
       } finally {
         setLoading(false);
       }

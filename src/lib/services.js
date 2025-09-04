@@ -1,6 +1,5 @@
 import axios from "axios";
 import { API_CONFIG, PAGINATION_CONFIG } from "../config/constants";
-import { handleError } from "../utils/helpers";
 
 // Create an Axios instance
 const API = axios.create({
@@ -73,6 +72,16 @@ const apiHandler = async (apiCall) => {
 
 // Centralized API Handling functions end
 
+// App Configs API
+const getAppConfigs = () => apiHandler(() => API.get("/global/config"));
+
+const updateAppConfigs = (payload) =>
+  apiHandler(() => API.put("/global/config", payload));
+
+// Dashboard Analytics API
+const getDashboardAnalytics = () =>
+  apiHandler(() => API.get("/dashboard/analytics"));
+
 // Products API
 const createProduct = (productData) =>
   apiHandler(() => API.post(`/product`, productData));
@@ -142,6 +151,9 @@ const updateOrder = (id, orderData) =>
   apiHandler(() => API.put(`/order/${id}`, orderData));
 
 export const api = {
+  getAppConfigs,
+  updateAppConfigs,
+  getDashboardAnalytics,
   getAllProducts,
   getAllCategories,
   createProduct,

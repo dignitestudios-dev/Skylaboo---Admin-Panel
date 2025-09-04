@@ -100,30 +100,16 @@ export const MENU_ITEMS = [
     children: [],
   },
   {
-    id: "transactions",
-    label: "Transactions & Revenue",
-    icon: "CreditCard",
-    path: "/transactions",
-    children: [
-      {
-        id: "transactions-list",
-        label: "All Transactions",
-        path: "/transactions",
-      },
-      {
-        id: "revenue-breakdown",
-        label: "Revenue Breakdown",
-        path: "/transactions/revenue",
-      },
-    ],
-  },
-
-  {
     id: "settings",
     label: "Settings",
     icon: "Settings",
     path: "/settings",
     children: [
+      {
+        id: "configs",
+        label: "Configurations",
+        path: "/settings/configs",
+      },
       {
         id: "change-password",
         label: "Change Password",

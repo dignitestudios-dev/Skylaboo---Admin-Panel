@@ -27,6 +27,7 @@ const DataTable = ({
   currentPage = 1,
   pageSize = PAGINATION_CONFIG.defaultPageSize,
   searchTerm = "",
+  searchPlaceholder = "Search...",
   onPageChange,
   onPageSizeChange,
   onSearch,
@@ -102,7 +103,7 @@ const DataTable = ({
         {searchable && (
           <div className="flex-1 max-w-md">
             <Input
-              placeholder="Search..."
+              placeholder={searchPlaceholder || "Search..."}
               value={searchTerm}
               onChange={(e) => handleSearch(e)}
               leftIcon={<Search className="w-4 h-4 text-gray-400" />}

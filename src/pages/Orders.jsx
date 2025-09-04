@@ -1,21 +1,36 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Select from "../components/ui/Select";
-import { Eye, Edit, Truck, User, MapPin, Loader2 } from "lucide-react";
+import {
+  Eye,
+  Edit,
+  Truck,
+  User,
+  MapPin,
+  Loader2,
+  Package,
+  Clock,
+  ShieldX,
+  PackageSearch,
+  PackageCheck,
+  DollarSign,
+} from "lucide-react";
 import DataTable from "../components/common/DataTable";
 import Button from "../components/ui/Button";
 import Badge from "../components/ui/Badge";
 import Card from "../components/ui/Card";
 import Modal from "../components/ui/Modal";
-import { formatCurrency, formatDateTime } from "../utils/helpers";
+import { formatCurrency, formatDateTime, formatNumber } from "../utils/helpers";
 import { ORDER_STATUS, PAGINATION_CONFIG } from "../config/constants";
 import useOrderActions from "../hooks/orders/useOrderActions";
 import useDebounce from "../hooks/global/useDebounce";
 import FilterBar from "../components/ui/FilterBar";
+import { useApp } from "../contexts/AppContext";
+import StatsCard from "../components/common/StatsCard";
 
 const Orders = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(PAGINATION_CONFIG.defaultPageSize);
-
+  const { appConfigs } = useApp();
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [editingOrder, setEditingOrder] = useState(null);
@@ -32,6 +47,7 @@ const Orders = () => {
     endDate: "",
   };
   const [filters, setFilters] = useState(defaultFilters);
+  const [apiFilters, setApiFilters] = useState(defaultFilters);
 
   const formattedFilters = [
     {
@@ -89,6 +105,7 @@ const Orders = () => {
 
   const {
     orders,
+    stats,
     totalPages,
     totalData,
     loading,
@@ -96,15 +113,20 @@ const Orders = () => {
     updateOrder,
     getOrders,
   } = useOrderActions(
-    filters.paymentStatus,
-    filters.orderStatus,
-    filters.orderType,
-    filters.startDate,
-    filters.endDate,
+    apiFilters.paymentStatus,
+    apiFilters.orderStatus,
+    apiFilters.orderType,
+    apiFilters.startDate,
+    apiFilters.endDate,
     searchDebounce,
     currentPage,
     pageSize
   );
+
+  useEffect(() => {
+    setCurrentPage(1);
+    setApiFilters(filters);
+  }, [filters]);
 
   const columns = [
     {
@@ -117,7 +139,7 @@ const Orders = () => {
     },
     {
       key: "contact",
-      label: "Customer Email",
+      label: "Customer",
 
       render: (value, order) => (
         <div className="flex items-center space-x-3">
@@ -128,7 +150,12 @@ const Orders = () => {
           </div>
           <div>
             <p className="font-medium text-gray-900 dark:text-white">
-              {value?.email}
+              {order?.orderType === "delivery" && order?.delivery?.firstName
+                ? `${order?.delivery?.firstName} ${order?.delivery?.lastName}`
+                : ""}
+            </p>
+            <p className="font-medium text-gray-500 dark:text-gray-300">
+              <a href={`mailto:${value?.email}`}>{value?.email}</a>
             </p>
           </div>
         </div>
@@ -168,6 +195,23 @@ const Orders = () => {
         <span className="font-semibold text-gray-900 dark:text-white">
           {formatCurrency(value)}
         </span>
+      ),
+    },
+    {
+      key: "orderType",
+      label: "Type",
+      render: (value) => (
+        <Badge
+          variant={
+            value === "delivery"
+              ? "warning"
+              : value === "pickup"
+              ? "info"
+              : "default"
+          }
+        >
+          {value}
+        </Badge>
       ),
     },
     {
@@ -289,27 +333,62 @@ const Orders = () => {
     setSearch(search);
   };
 
+  const orderStats = useMemo(
+    () => [
+      {
+        title: "Total Orders",
+        value: formatNumber(stats?.totalOrders || 0),
+        icon: Package,
+        color: "text-primary-600",
+        bgColor: "bg-primary-600/20",
+      },
+      {
+        title: "Pending Orders",
+        value: formatNumber(stats?.pendingOrders || 0),
+        icon: Clock,
+        color: "text-yellow-600",
+        bgColor: "bg-yellow-600/20",
+      },
+      {
+        title: "Processing Orders",
+        value: formatNumber(stats?.processingOrders || 0),
+        icon: PackageSearch,
+        color: "text-orange-600",
+        bgColor: "bg-orange-600/20",
+      },
+      {
+        title: "Shipped Orders",
+        value: formatNumber(stats?.shippedOrders || 0),
+        icon: Truck,
+        color: "text-secondary-600",
+        bgColor: "bg-secondary-600/20",
+      },
+      {
+        title: "Delivered Orders",
+        value: formatNumber(stats?.deliveredOrders || 0),
+        icon: PackageCheck,
+        color: "text-green-600",
+        bgColor: "bg-green-600/20",
+      },
+    ],
+    [stats]
+  );
+
   return (
     <div className="space-y-6">
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        {/* {orderStats?.map((stat, index) => (
-          <Card key={index} className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                  {stat.title}
-                </p>
-                <p className={`text-2xl font-bold ${stat.color}`}>
-                  {stat.value}
-                </p>
-              </div>
-              <div className={`p-3 ${stat.bgColor} rounded-lg`}>
-                <stat.icon className={`w-6 h-6 ${stat.color}`} />
-              </div>
-            </div>
-          </Card>
-        ))} */}
+        {orderStats?.map((stat, index) => (
+          <StatsCard
+            key={index}
+            title={stat.title}
+            value={stat.value}
+            description={stat.description}
+            icon={stat.icon ? <stat.icon /> : null}
+            colored
+            index={index}
+          />
+        ))}
       </div>
 
       {/* Filters */}
@@ -342,7 +421,7 @@ const Orders = () => {
       <Modal
         isOpen={showDetailModal}
         onClose={() => setShowDetailModal(false)}
-        title="Order Details"
+        title={`Order Details`}
         size="xl"
       >
         {selectedOrder && (
@@ -351,41 +430,34 @@ const Orders = () => {
             <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                  Order {selectedOrder.id}
+                  Order {selectedOrder?.shortCode}
                 </h3>
                 <p className="text-gray-600 dark:text-gray-400">
-                  Placed on {formatDateTime(selectedOrder.createdAt)}
+                  Placed on {formatDateTime(selectedOrder?.createdAt)}
                 </p>
               </div>
               <div className="flex items-center space-x-2">
                 <Badge
                   variant={
-                    selectedOrder.status === "delivered"
-                      ? "success"
-                      : selectedOrder.status === "shipped"
-                      ? "info"
-                      : selectedOrder.status === "processing"
+                    selectedOrder?.orderStatus === "pending"
                       ? "warning"
+                      : selectedOrder?.orderStatus === "completed"
+                      ? "success"
+                      : selectedOrder?.orderStatus === "delivered"
+                      ? "success"
+                      : selectedOrder?.orderStatus === "shipped"
+                      ? "info"
+                      : selectedOrder?.orderStatus === "processing"
+                      ? "warning"
+                      : selectedOrder?.orderStatus === "confirmed"
+                      ? "info"
+                      : selectedOrder?.orderStatus === "cancelled"
+                      ? "danger"
                       : "default"
                   }
                 >
-                  {selectedOrder.status}
+                  {selectedOrder?.orderStatus}
                 </Badge>
-                <Select
-                  value={selectedOrder.status}
-                  onChange={(e) =>
-                    handleStatusChange(selectedOrder.id, e.target.value)
-                  }
-                  options={[
-                    { value: "pending", label: "Pending" },
-                    { value: "confirmed", label: "Confirmed" },
-                    { value: "processing", label: "Processing" },
-                    { value: "shipped", label: "Shipped" },
-                    { value: "delivered", label: "Delivered" },
-                    { value: "cancelled", label: "Cancelled" },
-                  ]}
-                  className="px-2 py-1 text-sm"
-                />
               </div>
             </div>
 
@@ -402,7 +474,10 @@ const Orders = () => {
                       Name
                     </label>
                     <p className="text-gray-900 dark:text-white">
-                      {selectedOrder.userName}
+                      {selectedOrder?.orderType === "delivery" &&
+                      selectedOrder?.delivery?.firstName
+                        ? `${selectedOrder?.delivery?.firstName} ${selectedOrder?.delivery?.lastName}`
+                        : "---"}
                     </p>
                   </div>
                   <div>
@@ -410,7 +485,17 @@ const Orders = () => {
                       Email
                     </label>
                     <p className="text-gray-900 dark:text-white">
-                      {selectedOrder.userEmail}
+                      <a href={`mailto:${selectedOrder?.contact?.email}`}>
+                        {selectedOrder?.contact?.email || "---"}
+                      </a>
+                    </p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">
+                      Phone Number
+                    </label>
+                    <p className="text-gray-900 dark:text-white">
+                      {selectedOrder?.delivery?.phoneNumber || "---"}
                     </p>
                   </div>
                 </div>
@@ -419,17 +504,42 @@ const Orders = () => {
               <div className="space-y-4">
                 <h4 className="font-semibold text-gray-900 dark:text-white flex items-center">
                   <MapPin className="w-4 h-4 mr-2" />
-                  Shipping Address
+                  {selectedOrder?.orderType === "delivery"
+                    ? "Shipping Address"
+                    : "Pickup Address"}
                 </h4>
-                <div className="space-y-1 text-gray-900 dark:text-white">
-                  <p>{selectedOrder.shippingAddress.street}</p>
-                  <p>
-                    {selectedOrder.shippingAddress.city},{" "}
-                    {selectedOrder.shippingAddress.state}{" "}
-                    {selectedOrder.shippingAddress.zipCode}
-                  </p>
-                  <p>{selectedOrder.shippingAddress.country}</p>
-                </div>
+                {selectedOrder?.orderType === "delivery" ? (
+                  <div className="space-y-1 text-gray-900 dark:text-white">
+                    <p>
+                      <span className="text-sm font-medium text-gray-500">
+                        Address:
+                      </span>{" "}
+                      {selectedOrder?.delivery?.address}
+                    </p>
+                    <p>
+                      <span className="text-sm font-medium text-gray-500">
+                        City:
+                      </span>{" "}
+                      {selectedOrder?.delivery?.city}
+                    </p>
+                    <p>
+                      <span className="text-sm font-medium text-gray-500">
+                        Country:
+                      </span>{" "}
+                      {selectedOrder?.delivery?.country}
+                    </p>
+                    <p>
+                      <span className="text-sm font-medium text-gray-500">
+                        Apartment:
+                      </span>{" "}
+                      {selectedOrder?.delivery?.apartment}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-1 text-gray-900 dark:text-white">
+                    <p>{appConfigs?.pickupAddress}</p>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -438,7 +548,7 @@ const Orders = () => {
               <h4 className="font-semibold text-gray-900 dark:text-white">
                 Order Items
               </h4>
-              <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+              <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-auto">
                 <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                   <thead className="bg-gray-50 dark:bg-gray-800">
                     <tr>
@@ -449,6 +559,12 @@ const Orders = () => {
                         Quantity
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        Size
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        Color
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                         Price
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
@@ -457,13 +573,22 @@ const Orders = () => {
                     </tr>
                   </thead>
                   <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
-                    {selectedOrder.items.map((item) => (
+                    {selectedOrder?.products?.map((item) => (
                       <tr key={item.id}>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-                          {item.name}
+                          {item.product.title}
+                          <p className="text-gray-400">
+                            ID: {item.product._id}
+                          </p>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                           {item.quantity}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                          {item.selectedSize || "---"}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                          {item.selectedColor || "---"}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                           {formatCurrency(item.price)}
@@ -489,13 +614,10 @@ const Orders = () => {
                     Subtotal:
                   </span>
                   <span className="text-gray-900 dark:text-white">
-                    {formatCurrency(selectedOrder.subtotal)}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600 dark:text-gray-400">Tax:</span>
-                  <span className="text-gray-900 dark:text-white">
-                    {formatCurrency(selectedOrder.tax)}
+                    {formatCurrency(
+                      selectedOrder?.totalAmount -
+                        (appConfigs?.shippingCost || 0)
+                    )}
                   </span>
                 </div>
                 <div className="flex justify-between">
@@ -503,7 +625,7 @@ const Orders = () => {
                     Shipping:
                   </span>
                   <span className="text-gray-900 dark:text-white">
-                    {formatCurrency(selectedOrder.shipping)}
+                    {formatCurrency(appConfigs?.shippingCost || 0)}
                   </span>
                 </div>
                 <div className="border-t border-gray-200 dark:border-gray-700 pt-2">
@@ -512,7 +634,7 @@ const Orders = () => {
                       Total:
                     </span>
                     <span className="font-semibold text-gray-900 dark:text-white">
-                      {formatCurrency(selectedOrder.total)}
+                      {formatCurrency(selectedOrder?.totalAmount || 0)}
                     </span>
                   </div>
                 </div>
@@ -530,7 +652,15 @@ const Orders = () => {
           title="Update Order Status"
         >
           <div className="space-y-4">
-            <p>Select a new status for the order:</p>
+            <p className="text-gray-500 dark:text-gray-400">
+              Select a new status for the order:
+            </p>
+            <p className="text-gray-500 dark:text-gray-400">
+              Order ID:{" "}
+              <span className="font-medium text-gray-800 dark:text-gray-100">
+                {editingOrder?.shortCode}
+              </span>
+            </p>
 
             <Select
               value={newOrderStatus}

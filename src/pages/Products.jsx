@@ -347,7 +347,9 @@ const Products = () => {
           getAllProducts();
         }
       } else {
-        const success = await createProduct(payload);
+        const { images, ...apiPayload } = payload;
+
+        const success = await createProduct(apiPayload);
         if (success) {
           reset(defaultValues);
           setShowModal(false);
@@ -646,6 +648,7 @@ const Products = () => {
                   onChange={(files) => onChange(files)}
                   value={value}
                   label="Product Images"
+                  multiple
                   error={fieldState.error?.message}
                   disabled={loadingCreateProduct}
                 />

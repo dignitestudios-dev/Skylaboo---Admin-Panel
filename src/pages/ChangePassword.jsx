@@ -6,8 +6,11 @@ import Card from "../components/ui/Card";
 import Popup from "../components/ui/Popup";
 import { useForm } from "react-hook-form";
 import { SECURITY_CONFIG } from "../config/constants";
+import { useAuth } from "../contexts/AuthContext";
+import { handleError } from "../utils/helpers";
 
 const ChangePassword = () => {
+  const { updatePassword } = useAuth();
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -58,20 +61,26 @@ const ChangePassword = () => {
     setIsLoading(true);
 
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      const payload = {
+        currentPassword: data.currentPassword,
+        newPassword: data.newPassword,
+      };
+      const response = await updatePassword(payload);
 
-      // In real app, verify current password and update to new password
-      console.log("Password changed successfully");
+      if (response.success) {
+        setIsSuccess(true);
+        reset();
 
-      setIsSuccess(true);
-      reset();
-
-      // Hide success message after 5 seconds
-      setTimeout(() => {
-        setIsSuccess(false);
-      }, 5000);
+        // Hide success message after 5 seconds
+        setTimeout(() => {
+          setIsSuccess(false);
+        }, 5000);
+      } else {
+        handleError(response.error || "Error changing password");
+        console.error("Error changing password:", response.error);
+      }
     } catch (error) {
+      handleError(error.message || "Error changing password");
       console.error("Error changing password:", error);
     } finally {
       setIsLoading(false);
@@ -287,25 +296,28 @@ const ChangePassword = () => {
         <Card.Content>
           <div className="space-y-3 text-sm text-gray-600 dark:text-gray-400">
             <div className="flex items-start space-x-3">
-              <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+              <CheckCircle className="icon" />
               <p>Use a unique password that you don't use for other accounts</p>
             </div>
+
             <div className="flex items-start space-x-3">
-              <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+              <CheckCircle className="icon" />
               <p>
                 Include a mix of uppercase letters, lowercase letters, numbers,
                 and symbols
               </p>
             </div>
+
             <div className="flex items-start space-x-3">
-              <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+              <CheckCircle className="icon" />
               <p>
                 Avoid using personal information like your name, birthday, or
                 address
               </p>
             </div>
+
             <div className="flex items-start space-x-3">
-              <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+              <CheckCircle className="icon" />
               <p>
                 Consider using a password manager to generate and store strong
                 passwords

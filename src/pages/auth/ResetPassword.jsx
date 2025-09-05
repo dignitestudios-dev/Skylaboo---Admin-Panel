@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { ArrowLeft, Eye, EyeOff, Lock, CheckCircle } from "lucide-react";
 import Button from "../../components/ui/Button";
@@ -14,8 +14,14 @@ const ResetPassword = () => {
   const [isSuccess, setIsSuccess] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+  let email;
 
-  const email = location.state?.email || "user@example.com";
+  useEffect(() => {
+    email = location.state?.email;
+    if (!email) {
+      navigate("/auth/login");
+    }
+  }, [location]);
 
   const {
     register,

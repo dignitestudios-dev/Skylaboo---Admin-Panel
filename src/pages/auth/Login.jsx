@@ -6,7 +6,7 @@ import { useAuth } from "../../contexts/AuthContext";
 import { APP_CONFIG, AUTH_ROUTES } from "../../config/constants";
 
 const Login = () => {
-  const { user, login, loading, isLockedOut } = useAuth();
+  const { user, login, loading, isLockedOut, remainingLockTime } = useAuth();
   const location = useLocation();
   const [formData, setFormData] = useState({
     email: "",
@@ -44,7 +44,7 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
           <div className="mx-auto w-16 h-16 bg-primary-600 rounded-lg flex items-center justify-center">
@@ -72,7 +72,9 @@ const Login = () => {
             <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 text-yellow-600 dark:text-yellow-400 px-4 py-3 rounded-lg text-sm">
               <p className="font-medium">Account Temporarily Locked</p>
               <p className="mt-1">
-                Too many failed login attempts. Please try again later.
+                Too many failed login attempts. Please try again in{" "}
+                {Math.floor(remainingLockTime / 60000)} minutes and{" "}
+                {Math.floor((remainingLockTime % 60000) / 1000)} seconds.
               </p>
             </div>
           )}
@@ -154,25 +156,7 @@ const Login = () => {
             </div>
           </div>
 
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <input
-                id="remember-me"
-                name="remember-me"
-                type="checkbox"
-                checked={rememberMe}
-                onChange={(e) => setRememberMe(e.target.checked)}
-                className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-600 rounded"
-                disabled={loading || isLockedOut}
-              />
-              <label
-                htmlFor="remember-me"
-                className="ml-2 block text-sm text-gray-700 dark:text-gray-300"
-              >
-                Remember me
-              </label>
-            </div>
-
+          <div className="flex items-center justify-end">
             <div className="text-sm">
               <Link
                 to={AUTH_ROUTES.FORGOT_PASSWORD}
@@ -198,18 +182,6 @@ const Login = () => {
                 "Sign in"
               )}
             </button>
-          </div>
-
-          <div
-            className="text-center text-white"
-            onClick={() =>
-              setFormData({
-                email: "admin@example.com",
-                password: "Password@12",
-              })
-            }
-          >
-            Hi
           </div>
         </form>
       </div>

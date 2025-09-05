@@ -53,7 +53,7 @@ export const getTrend = (num) => {
   if (num > 0) return "up";
   if (num < 0) return "down";
   return "neutral";
-}
+};
 
 // Array utilities
 export const sortBy = (array, key, direction = "asc") => {
@@ -138,6 +138,7 @@ export const deepClone = (obj) => {
 };
 
 export const handleError = (error) => {
+  console.log(error);
   toast.error(
     error?.message || error?.response?.data?.message || "Something went wrong"
   );

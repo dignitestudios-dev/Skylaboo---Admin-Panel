@@ -13,14 +13,14 @@ export const APP_CONFIG = {
 export const COLOR_CONFIG = {
   // Primary color (required) - Main brand color
   primary: {
-    name: "Purple",
+    name: "Pink",
     hex: "#ff82e9",
     rgb: "198, 13, 249",
     enabled: true, // Set to false to disable secondary color
   },
   // Secondary color (optional) - Accent color
   secondary: {
-    name: "Blue",
+    name: "Yellow",
     hex: "#ebc501",
     rgb: "97, 50, 234",
     enabled: true,
@@ -258,10 +258,9 @@ export const SECURITY_CONFIG = {
   passwordRequireUppercase: true,
   passwordRequireLowercase: true,
   passwordRequireNumbers: true,
-  passwordRequireSpecialChars: false,
+  passwordRequireSpecialChars: true,
   maxLoginAttempts: 5,
-  lockoutDuration: 15 * 60 * 1000, // 15 minutes
-  sessionTimeout: 24 * 60 * 60 * 1000, // 24 hours
+  lockoutDuration: 2 * 60 * 1000, // 2 minutes
   otpLength: 6,
   otpExpiry: 10 * 60 * 1000, // 10 minutes
 };

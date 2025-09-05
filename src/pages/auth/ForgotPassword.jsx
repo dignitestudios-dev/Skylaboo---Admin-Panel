@@ -1,34 +1,33 @@
-import { useState } from 'react'
-import { Link } from 'react-router-dom'
-import { ArrowLeft, Mail } from 'lucide-react'
-import Button from '../../components/ui/Button'
-import Input from '../../components/ui/Input'
-import Card from '../../components/ui/Card'
-import { useForm } from 'react-hook-form'
-import { validateEmail } from '../../utils/helpers'
+import { useState } from "react";
+import { Link } from "react-router-dom";
+import { ArrowLeft, Mail } from "lucide-react";
+import Button from "../../components/ui/Button";
+import Input from "../../components/ui/Input";
+import Card from "../../components/ui/Card";
+import { useForm } from "react-hook-form";
+import { validateEmail } from "../../utils/helpers";
+import { useAuth } from "../../contexts/AuthContext";
 
 const ForgotPassword = () => {
-  const [isLoading, setIsLoading] = useState(false)
-  const [isEmailSent, setIsEmailSent] = useState(false)
-  const { register, handleSubmit, formState: { errors }, getValues } = useForm()
+  const [isEmailSent, setIsEmailSent] = useState(false);
+  const { loadingAuthActions, forgotPassword } = useAuth();
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    getValues,
+  } = useForm();
 
   const onSubmit = async (data) => {
-    setIsLoading(true)
-    
-    try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000))
-      
-      // In real app, send password reset email
-      console.log('Password reset email sent to:', data.email)
-      
-      setIsEmailSent(true)
-    } catch (error) {
-      console.error('Error sending reset email:', error)
-    } finally {
-      setIsLoading(false)
+    const payload = {
+      email: data?.email,
+      role: "admin",
+    };
+    const success = await forgotPassword(payload);
+    if (success) {
+      setIsEmailSent(true);
     }
-  }
+  };
 
   if (isEmailSent) {
     return (
@@ -43,16 +42,27 @@ const ForgotPassword = () => {
                 Check your email
               </h2>
               <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-                We've sent a password reset link to{' '}
+                We've sent an OTP to{" "}
                 <span className="font-medium text-primary-600">
-                  {getValues('email')}
+                  {getValues("email")}
                 </span>
               </p>
             </div>
 
             <div className="mt-8 space-y-4">
+              {/* Verify Button */}
+              <div className="text-center">
+                <Link
+                  to="/auth/verify-otp"
+                  state={{ email: getValues("email") }}
+                  className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors duration-200"
+                >
+                  Verify OTP
+                </Link>
+              </div>
+
               <p className="text-sm text-gray-500 dark:text-gray-400 text-center">
-                Didn't receive the email? Check your spam folder or{' '}
+                Didn't receive the email? Check your spam folder or{" "}
                 <button
                   onClick={() => setIsEmailSent(false)}
                   className="font-medium text-primary-600 hover:text-primary-500"
@@ -74,7 +84,7 @@ const ForgotPassword = () => {
           </Card>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -85,7 +95,7 @@ const ForgotPassword = () => {
             Forgot your password?
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600 dark:text-gray-400">
-            Enter your email address and we'll send you a link to reset your password.
+            Enter your email address and we'll send you an to verify you.
           </p>
         </div>
 
@@ -95,9 +105,10 @@ const ForgotPassword = () => {
               label="Email address"
               type="email"
               autoComplete="email"
-              {...register('email', {
-                required: 'Email is required',
-                validate: value => validateEmail(value) || 'Please enter a valid email address'
+              {...register("email", {
+                required: "Email is required",
+                validate: (value) =>
+                  validateEmail(value) || "Please enter a valid email address",
               })}
               error={errors.email?.message}
               leftIcon={<Mail className="w-4 h-4 text-gray-400" />}
@@ -106,10 +117,10 @@ const ForgotPassword = () => {
             <Button
               type="submit"
               className="w-full"
-              loading={isLoading}
-              disabled={isLoading}
+              loading={loadingAuthActions}
+              disabled={loadingAuthActions}
             >
-              {isLoading ? 'Sending...' : 'Send reset link'}
+              {loadingAuthActions ? "Sending..." : "Verify Email"}
             </Button>
 
             <div className="text-center">
@@ -125,7 +136,7 @@ const ForgotPassword = () => {
         </Card>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default ForgotPassword
+export default ForgotPassword;

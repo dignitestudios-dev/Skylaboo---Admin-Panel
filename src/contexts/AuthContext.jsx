@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { SECURITY_CONFIG, AUTH_ROUTES } from "../config/constants";
+import { SECURITY_CONFIG } from "../config/constants";
+import { handleError, handleSuccess } from "../utils/helpers";
+import { api } from "../lib/services";
 
 const AuthContext = createContext();
 
@@ -14,13 +16,16 @@ export const useAuth = () => {
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [loadingAuthActions, setLoadingAuthActions] = useState(false);
   const [loginAttempts, setLoginAttempts] = useState(0);
   const [lockedUntil, setLockedUntil] = useState(null);
+  const [remainingLockTime, setRemainingLockTime] = useState(null);
 
   // Check if user is locked out
   const isLockedOut = () => {
-    if (!lockedUntil) return false;
-    return new Date() < new Date(lockedUntil);
+    const lockedUntilCache = localStorage.getItem("lockedUntil");
+    if (!lockedUntilCache) return false;
+    return new Date() < new Date(lockedUntilCache);
   };
 
   // Initialize auth state
@@ -63,63 +68,65 @@ export const AuthProvider = ({ children }) => {
     setLoading(true);
 
     try {
-      // Simulate API call - replace with actual API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      // Generate device information
+      const deviceuniqueid = `device-${Date.now()}-${Math.floor(
+        Math.random() * 10000
+      )}`;
+      const devicemodel = navigator.userAgent || "Unknown Device";
 
-      // Demo credentials
-      if (email === "admin@example.com" && password === "Password@12") {
-        const userData = {
-          id: 1,
-          email: "admin@example.com",
-          name: "Admin User",
-          role: "admin",
-          avatar: null,
-          permissions: ["read", "write", "delete", "admin"],
-        };
+      console.log(deviceuniqueid, devicemodel);
 
-        const token =
-          "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4YjAzMmU0ZWRhYjc2MWMwMGVhODMwZSIsImlhdCI6MTc1NjM3NzgyOCwiZXhwIjoxNzY0MTUzODI4fQ.Qe4VrVM8rqqJ76hatu1IYoBKxCfIRoa4lC4m3TX0Dgg";
-        const expiry = new Date(Date.now() + SECURITY_CONFIG.sessionTimeout);
+      const response = await api.login({
+        email,
+        password,
+        deviceuniqueid,
+        devicemodel,
+      });
 
-        // Store auth data
-        localStorage.setItem("authToken", token);
-        localStorage.setItem("userData", JSON.stringify(userData));
-        localStorage.setItem("tokenExpiry", expiry.toISOString());
+      const userData = response?.data?.user;
+      const token = response?.data?.token;
 
-        setUser(userData);
-        setLoginAttempts(0);
-        setLockedUntil(null);
+      // Store auth data
+      localStorage.setItem("authToken", token);
+      localStorage.setItem("userData", JSON.stringify(userData));
 
-        return { success: true, user: userData };
-      } else {
-        // Invalid credentials
-        const newAttempts = loginAttempts + 1;
-        setLoginAttempts(newAttempts);
+      setUser(userData);
+      setLoginAttempts(0);
+      localStorage.setItem("loginAttempts", 0);
+      setLockedUntil(null);
+      localStorage.setItem("lockedUntil", JSON.stringify(null));
 
-        if (newAttempts >= SECURITY_CONFIG.maxLoginAttempts) {
-          const lockoutEnd = new Date(
-            Date.now() + SECURITY_CONFIG.lockoutDuration
-          );
-          setLockedUntil(lockoutEnd.toISOString());
-          return {
-            success: false,
-            error: `Too many failed attempts. Account locked for ${
-              SECURITY_CONFIG.lockoutDuration / 60000
-            } minutes.`,
-          };
-        }
+      handleSuccess(response.message, "Login successful");
+      return { success: true, user: userData };
+    } catch (error) {
+      let loginAttemptsCache = localStorage.getItem("loginAttempts");
+      if (loginAttemptsCache) {
+        loginAttemptsCache = parseInt(loginAttemptsCache, 10);
+      }
+      const newAttempts = loginAttemptsCache + 1;
+      setLoginAttempts(newAttempts);
+      localStorage.setItem("loginAttempts", newAttempts);
 
+      if (newAttempts >= SECURITY_CONFIG.maxLoginAttempts) {
+        const lockoutEnd = new Date(
+          Date.now() + SECURITY_CONFIG.lockoutDuration
+        );
+        setLockedUntil(lockoutEnd.toISOString());
+        localStorage.setItem("lockedUntil", lockoutEnd.toISOString());
         return {
           success: false,
-          error: `Invalid credentials. ${
-            SECURITY_CONFIG.maxLoginAttempts - newAttempts
-          } attempts remaining.`,
+          error: `Too many failed attempts. Account locked for ${
+            SECURITY_CONFIG.lockoutDuration / 60000
+          } minutes.`,
         };
       }
-    } catch (error) {
+
+      handleError(error);
       return {
         success: false,
-        error: "Login failed. Please try again.",
+        error: `Invalid credentials. ${
+          SECURITY_CONFIG.maxLoginAttempts - newAttempts
+        } attempts remaining.`,
       };
     } finally {
       setLoading(false);
@@ -131,223 +138,142 @@ export const AuthProvider = ({ children }) => {
     setLoading(true);
 
     try {
+      await api.logout();
       // Clear auth data
       localStorage.removeItem("authToken");
       localStorage.removeItem("userData");
-      localStorage.removeItem("tokenExpiry");
 
       setUser(null);
       setLoginAttempts(0);
+      localStorage.setItem("loginAttempts", 0);
       setLockedUntil(null);
+      localStorage.setItem("lockedUntil", JSON.stringify(null));
 
+      handleSuccess("Logout successful");
       return { success: true };
     } catch (error) {
-      return {
-        success: false,
-        error: "Logout failed",
-      };
+      handleError(error);
+      return { success: false, error: "Logout failed." };
     } finally {
       setLoading(false);
     }
   };
 
   // Forgot password function
-  const forgotPassword = async (email) => {
-    setLoading(true);
-
+  const forgotPassword = async (payload) => {
+    setLoadingAuthActions(true);
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      // In real app, this would send an email with OTP
-      return {
-        success: true,
-        message: "OTP sent to your email address",
-      };
+      const response = await api.forgotPassword(payload);
+      return response.success;
     } catch (error) {
-      return {
-        success: false,
-        error: "Failed to send OTP. Please try again.",
-      };
+      handleError(error);
+      return false;
     } finally {
-      setLoading(false);
+      setLoadingAuthActions(false);
     }
   };
 
   // Verify OTP function
   const verifyOTP = async (email, otp) => {
-    setLoading(true);
-
+    setLoadingAuthActions(true);
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      const response = await api.verifyOTP(email, otp);
+      const userData = response.data.user;
+      const token = response.data.token;
 
-      // Demo OTP verification (in real app, verify against backend)
-      if (otp === "123456") {
-        const resetToken = "demo-reset-token";
-        return {
-          success: true,
-          token: resetToken,
-        };
+      // Store auth data
+      localStorage.setItem("authToken", token);
+      localStorage.setItem("userData", JSON.stringify(userData));
+
+      setUser(userData);
+      handleSuccess(response.message, "OTP verified successfully");
+      return { success: true };
+    } catch (error) {
+      handleError(error);
+      return { success: false, error: "OTP verification failed." };
+    } finally {
+      setLoadingAuthActions(false);
+    }
+  };
+
+  // Update password function
+  const updatePassword = async (payload) => {
+    setLoadingAuthActions(true);
+    try {
+      const response = await api.updatePassword(payload);
+
+      if (response.success) {
+        handleSuccess(response.message, "Password updated successfully");
+        return { success: true };
       } else {
-        return {
-          success: false,
-          error: "Invalid OTP. Please try again.",
-        };
+        throw new Error(response.message || "Failed to update password.");
       }
     } catch (error) {
+      handleError(error);
       return {
         success: false,
-        error: "OTP verification failed",
+        error: error.message || "Failed to update password.",
       };
     } finally {
-      setLoading(false);
+      setLoadingAuthActions(false);
     }
   };
 
-  // Reset password function
-  const resetPassword = async (token, newPassword) => {
+  // Register function
+  const register = async (email, password, name) => {
     setLoading(true);
-
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      // Validate password strength
-      const isValidPassword = validatePassword(newPassword);
-      if (!isValidPassword.valid) {
-        return {
-          success: false,
-          error: isValidPassword.error,
-        };
-      }
-
-      return {
-        success: true,
-        message: "Password reset successfully",
-      };
+      const response = await api.register({ email, password, name });
+      handleSuccess(response.message, "User registered successfully");
+      return { success: true, user: response.data.user };
     } catch (error) {
-      return {
-        success: false,
-        error: "Password reset failed",
-      };
+      handleError(error);
+      return { success: false, error: "Registration failed." };
     } finally {
       setLoading(false);
     }
   };
 
-  // Change password function
-  const changePassword = async (currentPassword, newPassword) => {
-    setLoading(true);
+  useEffect(() => {
+    if (isLockedOut()) {
+      const interval = setInterval(() => {
+        const lockedUntilCache = localStorage.getItem("lockedUntil");
+        if (lockedUntilCache) {
+          const remainingTime = Math.max(
+            new Date(lockedUntilCache) - new Date(),
+            0
+          );
+          setRemainingLockTime(remainingTime);
+          if (remainingTime === 0) {
+            clearInterval(interval);
+            setLockedUntil(null);
+            setLoginAttempts(0);
+            localStorage.removeItem("lockedUntil");
+            localStorage.setItem("loginAttempts", "0");
+          }
+        }
+      }, 1000);
 
-    try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      // Validate current password (in real app, verify against backend)
-      if (currentPassword !== "password") {
-        return {
-          success: false,
-          error: "Current password is incorrect",
-        };
-      }
-
-      // Validate new password strength
-      const isValidPassword = validatePassword(newPassword);
-      if (!isValidPassword.valid) {
-        return {
-          success: false,
-          error: isValidPassword.error,
-        };
-      }
-
-      return {
-        success: true,
-        message: "Password changed successfully",
-      };
-    } catch (error) {
-      return {
-        success: false,
-        error: "Password change failed",
-      };
-    } finally {
-      setLoading(false);
+      return () => clearInterval(interval);
+    } else {
+      setRemainingLockTime(null);
     }
-  };
-
-  // Password validation function
-  const validatePassword = (password) => {
-    if (password.length < SECURITY_CONFIG.passwordMinLength) {
-      return {
-        valid: false,
-        error: `Password must be at least ${SECURITY_CONFIG.passwordMinLength} characters long`,
-      };
-    }
-
-    if (SECURITY_CONFIG.passwordRequireUppercase && !/[A-Z]/.test(password)) {
-      return {
-        valid: false,
-        error: "Password must contain at least one uppercase letter",
-      };
-    }
-
-    if (SECURITY_CONFIG.passwordRequireLowercase && !/[a-z]/.test(password)) {
-      return {
-        valid: false,
-        error: "Password must contain at least one lowercase letter",
-      };
-    }
-
-    if (SECURITY_CONFIG.passwordRequireNumbers && !/\d/.test(password)) {
-      return {
-        valid: false,
-        error: "Password must contain at least one number",
-      };
-    }
-
-    if (
-      SECURITY_CONFIG.passwordRequireSpecialChars &&
-      !/[!@#$%^&*(),.?":{}|<>]/.test(password)
-    ) {
-      return {
-        valid: false,
-        error: "Password must contain at least one special character",
-      };
-    }
-
-    return { valid: true };
-  };
-
-  // Check if user has permission
-  const hasPermission = (permission) => {
-    if (!user || !user.permissions) return false;
-    return (
-      user.permissions.includes(permission) ||
-      user.permissions.includes("admin")
-    );
-  };
-
-  // Check if user has role
-  const hasRole = (role) => {
-    if (!user) return false;
-    return user.role === role || user.role === "admin";
-  };
+  }, [lockedUntil]);
 
   const value = {
     user,
     loading,
+    loadingAuthActions,
     isAuthenticated: !!user,
     isLockedOut: isLockedOut(),
     loginAttempts,
+    remainingLockTime,
     login,
     logout,
     forgotPassword,
     verifyOTP,
-    resetPassword,
-    changePassword,
-    validatePassword,
-    hasPermission,
-    hasRole,
+    updatePassword,
+    register,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -26,7 +26,7 @@ API.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error?.response?.status === 401) {
-      localStorage.remove("token"); // Remove token if unauthorized
+      localStorage.removeItem("authToken"); // Remove token if unauthorized
       window.location.href = "/auth/login"; // Redirect to login page
     }
     console.log(error);
@@ -71,6 +71,29 @@ const apiHandler = async (apiCall) => {
 };
 
 // Centralized API Handling functions end
+
+// Auth APIs
+
+const login = (credentials) =>
+  apiHandler(() =>
+    API.post("/auth/login", credentials, {
+      headers: {
+        deviceuniqueid: credentials.deviceuniqueid,
+        devicemodel: credentials.devicemodel,
+      },
+    })
+  );
+
+const forgotPassword = (payload) =>
+  apiHandler(() => API.post("/auth/forgot", payload));
+
+const verifyOTP = (email, role, otp) =>
+  apiHandler(() => API.post("/auth/verify-otp", { email, role, otp }));
+
+const updatePassword = (payload) =>
+  apiHandler(() => API.post("/auth/update-password", payload));
+
+const logout = () => apiHandler(() => API.post("/auth/logout"));
 
 // App Configs API
 const getAppConfigs = () => apiHandler(() => API.get("/global/config"));
@@ -151,6 +174,11 @@ const updateOrder = (id, orderData) =>
   apiHandler(() => API.put(`/order/${id}`, orderData));
 
 export const api = {
+  login,
+  forgotPassword,
+  verifyOTP,
+  updatePassword,
+  logout,
   getAppConfigs,
   updateAppConfigs,
   getDashboardAnalytics,

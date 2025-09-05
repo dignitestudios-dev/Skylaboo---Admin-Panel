@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo } from "react";
 import Card from "../components/ui/Card";
 import Input from "../components/ui/Input";
 import { useForm } from "react-hook-form";
@@ -26,6 +26,15 @@ const Configurations = () => {
     clearErrors,
     formState: { errors },
   } = useForm({ defaultValues });
+
+  useEffect(() => {
+    if (appConfigs) {
+      reset({
+        pickupAddress: appConfigs?.pickupAddress || "",
+        shippingCost: appConfigs?.shippingCost || 0,
+      });
+    }
+  }, [appConfigs, reset]);
 
   const onSubmit = (data) => {
     if (data.shippingCost < 0) {

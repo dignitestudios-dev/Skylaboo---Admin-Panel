@@ -1,114 +1,120 @@
-import { useState, useEffect, useRef } from 'react'
-import { Link, useNavigate, useLocation } from 'react-router-dom'
-import { ArrowLeft, Shield } from 'lucide-react'
-import Button from '../../components/ui/Button'
-import Card from '../../components/ui/Card'
-import { SECURITY_CONFIG } from '../../config/constants'
+import { useState, useEffect, useRef } from "react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
+import { ArrowLeft, Shield } from "lucide-react";
+import Button from "../../components/ui/Button";
+import Card from "../../components/ui/Card";
+import { SECURITY_CONFIG } from "../../config/constants";
 
 const VerifyOTP = () => {
-  const [otp, setOtp] = useState(['', '', '', '', '', ''])
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState('')
-  const [timeLeft, setTimeLeft] = useState(600) // 10 minutes
-  const [canResend, setCanResend] = useState(false)
-  const inputRefs = useRef([])
-  const navigate = useNavigate()
-  const location = useLocation()
-  
-  const email = location.state?.email || 'user@example.com'
+  const [otp, setOtp] = useState(["", "", "", "", "", ""]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [timeLeft, setTimeLeft] = useState(600); // 10 minutes
+  const [canResend, setCanResend] = useState(false);
+  const inputRefs = useRef([]);
+  const navigate = useNavigate();
+  const location = useLocation();
+  let email;
+
+  useEffect(() => {
+    email = location.state?.email;
+    if (!email) {
+      navigate("/auth/login");
+    }
+  }, [location]);
 
   useEffect(() => {
     // Focus first input on mount
-    inputRefs.current[0]?.focus()
-  }, [])
+    inputRefs.current[0]?.focus();
+  }, []);
 
   useEffect(() => {
     // Countdown timer
     if (timeLeft > 0) {
-      const timer = setTimeout(() => setTimeLeft(timeLeft - 1), 1000)
-      return () => clearTimeout(timer)
+      const timer = setTimeout(() => setTimeLeft(timeLeft - 1), 1000);
+      return () => clearTimeout(timer);
     } else {
-      setCanResend(true)
+      setCanResend(true);
     }
-  }, [timeLeft])
+  }, [timeLeft]);
 
   const handleChange = (index, value) => {
-    if (value.length > 1) return // Prevent multiple characters
-    
-    const newOtp = [...otp]
-    newOtp[index] = value
-    setOtp(newOtp)
-    setError('')
+    if (value.length > 1) return; // Prevent multiple characters
+
+    const newOtp = [...otp];
+    newOtp[index] = value;
+    setOtp(newOtp);
+    setError("");
 
     // Auto-focus next input
     if (value && index < 5) {
-      inputRefs.current[index + 1]?.focus()
+      inputRefs.current[index + 1]?.focus();
     }
 
     // Auto-submit when all fields are filled
-    if (newOtp.every(digit => digit !== '') && newOtp.join('').length === 6) {
-      handleSubmit(newOtp.join(''))
+    if (newOtp.every((digit) => digit !== "") && newOtp.join("").length === 6) {
+      handleSubmit(newOtp.join(""));
     }
-  }
+  };
 
   const handleKeyDown = (index, e) => {
-    if (e.key === 'Backspace' && !otp[index] && index > 0) {
-      inputRefs.current[index - 1]?.focus()
+    if (e.key === "Backspace" && !otp[index] && index > 0) {
+      inputRefs.current[index - 1]?.focus();
     }
-  }
+  };
 
-  const handleSubmit = async (otpValue = otp.join('')) => {
+  const handleSubmit = async (otpValue = otp.join("")) => {
     if (otpValue.length !== 6) {
-      setError('Please enter all 6 digits')
-      return
+      setError("Please enter all 6 digits");
+      return;
     }
 
-    setIsLoading(true)
-    setError('')
+    setIsLoading(true);
+    setError("");
 
     try {
       // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000))
-      
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+
       // Demo: accept any 6-digit OTP
-      if (otpValue === '123456') {
-        navigate('/auth/reset-password', { state: { email, verified: true } })
+      if (otpValue === "123456") {
+        navigate("/auth/reset-password", { state: { email, verified: true } });
       } else {
-        setError('Invalid OTP. Please try again.')
-        setOtp(['', '', '', '', '', ''])
-        inputRefs.current[0]?.focus()
+        setError("Invalid OTP. Please try again.");
+        setOtp(["", "", "", "", "", ""]);
+        inputRefs.current[0]?.focus();
       }
     } catch (error) {
-      setError('Verification failed. Please try again.')
+      setError("Verification failed. Please try again.");
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   const handleResend = async () => {
-    setIsLoading(true)
-    setError('')
-    
+    setIsLoading(true);
+    setError("");
+
     try {
       // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      
-      setTimeLeft(600) // Reset timer
-      setCanResend(false)
-      setOtp(['', '', '', '', '', ''])
-      inputRefs.current[0]?.focus()
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      setTimeLeft(600); // Reset timer
+      setCanResend(false);
+      setOtp(["", "", "", "", "", ""]);
+      inputRefs.current[0]?.focus();
     } catch (error) {
-      setError('Failed to resend OTP. Please try again.')
+      setError("Failed to resend OTP. Please try again.");
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   const formatTime = (seconds) => {
-    const minutes = Math.floor(seconds / 60)
-    const remainingSeconds = seconds % 60
-    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`
-  }
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
@@ -121,7 +127,7 @@ const VerifyOTP = () => {
             Verify your identity
           </h2>
           <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-            We've sent a 6-digit code to{' '}
+            We've sent a 6-digit code to{" "}
             <span className="font-medium text-primary-600">{email}</span>
           </p>
         </div>
@@ -137,7 +143,7 @@ const VerifyOTP = () => {
                 {otp.map((digit, index) => (
                   <input
                     key={index}
-                    ref={el => inputRefs.current[index] = el}
+                    ref={(el) => (inputRefs.current[index] = el)}
                     type="text"
                     inputMode="numeric"
                     pattern="[0-9]*"
@@ -172,9 +178,9 @@ const VerifyOTP = () => {
               onClick={() => handleSubmit()}
               className="w-full"
               loading={isLoading}
-              disabled={isLoading || otp.some(digit => !digit)}
+              disabled={isLoading || otp.some((digit) => !digit)}
             >
-              {isLoading ? 'Verifying...' : 'Verify Code'}
+              {isLoading ? "Verifying..." : "Verify Code"}
             </Button>
 
             {/* Resend */}
@@ -189,7 +195,7 @@ const VerifyOTP = () => {
                 </button>
               ) : (
                 <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Didn't receive the code?{' '}
+                  Didn't receive the code?{" "}
                   <span className="text-primary-600">
                     Resend in {formatTime(timeLeft)}
                   </span>
@@ -213,12 +219,13 @@ const VerifyOTP = () => {
         {/* Demo Info */}
         <div className="text-center">
           <p className="text-xs text-gray-500 dark:text-gray-400">
-            Demo: Use code <span className="font-mono font-semibold">123456</span> to proceed
+            Demo: Use code{" "}
+            <span className="font-mono font-semibold">123456</span> to proceed
           </p>
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default VerifyOTP
+export default VerifyOTP;

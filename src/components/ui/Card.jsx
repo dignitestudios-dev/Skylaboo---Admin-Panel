@@ -60,7 +60,7 @@ const CardFooter = forwardRef(({ children, className = "", ...props }, ref) => {
   return (
     <div
       ref={ref}
-      className={`mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 ${className}`}
+      className={`mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 text-gray-400 ${className}`}
       {...props}
     >
       {children}

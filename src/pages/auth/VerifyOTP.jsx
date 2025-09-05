@@ -3,18 +3,23 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 import { ArrowLeft, Shield } from "lucide-react";
 import Button from "../../components/ui/Button";
 import Card from "../../components/ui/Card";
-import { SECURITY_CONFIG } from "../../config/constants";
+import { useAuth } from "../../contexts/AuthContext";
 
 const VerifyOTP = () => {
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
-  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [timeLeft, setTimeLeft] = useState(600); // 10 minutes
+  const [loadingResend, setLoadingResend] = useState(false);
   const [canResend, setCanResend] = useState(false);
   const inputRefs = useRef([]);
+  const { loadingAuthActions, verifyOTP, forgotPassword } = useAuth();
+
   const navigate = useNavigate();
   const location = useLocation();
   let email;
+
+  // Storage keys
+  const TIMER_KEY = "otp_timer_expiry";
 
   useEffect(() => {
     email = location.state?.email;
@@ -22,6 +27,23 @@ const VerifyOTP = () => {
       navigate("/auth/login");
     }
   }, [location]);
+
+  useEffect(() => {
+    // Initialize timer from localStorage or set new expiry
+    const savedExpiry = localStorage.getItem(TIMER_KEY);
+    const now = Date.now();
+
+    if (savedExpiry) {
+      const expiryTime = parseInt(savedExpiry);
+      const remainingTime = Math.max(0, Math.floor((expiryTime - now) / 1000));
+      setTimeLeft(remainingTime);
+      setCanResend(remainingTime === 0);
+    } else {
+      // Set new timer expiry (10 minutes from now)
+      const expiryTime = now + 60 * 1000; // 1 minute in milliseconds
+      localStorage.setItem(TIMER_KEY, expiryTime.toString());
+    }
+  }, []);
 
   useEffect(() => {
     // Focus first input on mount
@@ -35,6 +57,8 @@ const VerifyOTP = () => {
       return () => clearTimeout(timer);
     } else {
       setCanResend(true);
+      // Clear expired timer from localStorage
+      localStorage.removeItem(TIMER_KEY);
     }
   }, [timeLeft]);
 
@@ -69,45 +93,55 @@ const VerifyOTP = () => {
       return;
     }
 
-    setIsLoading(true);
     setError("");
 
-    try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+    const payload = {
+      email: location?.state?.email,
+      otp: otpValue,
+      role: "admin",
+    };
 
-      // Demo: accept any 6-digit OTP
-      if (otpValue === "123456") {
-        navigate("/auth/reset-password", { state: { email, verified: true } });
-      } else {
-        setError("Invalid OTP. Please try again.");
-        setOtp(["", "", "", "", "", ""]);
-        inputRefs.current[0]?.focus();
-      }
-    } catch (error) {
-      setError("Verification failed. Please try again.");
-    } finally {
-      setIsLoading(false);
+    const response = await verifyOTP(payload);
+
+    if (response.success) {
+      // Clear localStorage on successful verification
+      localStorage.removeItem(TIMER_KEY);
+
+      const email = location.state?.email;
+      navigate("/auth/reset-password", { state: { email, verified: true } });
+    } else {
+      setError(response.message || "Invalid OTP. Please try again.");
+      setOtp(["", "", "", "", "", ""]);
+      inputRefs.current[0]?.focus();
     }
   };
 
   const handleResend = async () => {
-    setIsLoading(true);
     setError("");
+    setLoadingResend(true);
 
-    try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+    // Simulate API call
+    const payload = {
+      email: location?.state?.email,
+      role: "admin",
+    };
+    const success = await forgotPassword(payload);
+
+    if (success) {
+      // Reset timer with new expiry time
+      const now = Date.now();
+      const newExpiry = now + 60 * 1000; // 10 minutes from now
+      localStorage.setItem(TIMER_KEY, newExpiry.toString());
 
       setTimeLeft(600); // Reset timer
       setCanResend(false);
       setOtp(["", "", "", "", "", ""]);
       inputRefs.current[0]?.focus();
-    } catch (error) {
+    } else {
       setError("Failed to resend OTP. Please try again.");
-    } finally {
-      setIsLoading(false);
     }
+
+    setLoadingResend(false);
   };
 
   const formatTime = (seconds) => {
@@ -115,6 +149,9 @@ const VerifyOTP = () => {
     const remainingSeconds = seconds % 60;
     return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
   };
+
+  // Get email for display (from localStorage or location state)
+  const displayEmail = location.state?.email;
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
@@ -128,7 +165,7 @@ const VerifyOTP = () => {
           </h2>
           <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
             We've sent a 6-digit code to{" "}
-            <span className="font-medium text-primary-600">{email}</span>
+            <span className="font-medium text-primary-600">{displayEmail}</span>
           </p>
         </div>
 
@@ -177,10 +214,16 @@ const VerifyOTP = () => {
             <Button
               onClick={() => handleSubmit()}
               className="w-full"
-              loading={isLoading}
-              disabled={isLoading || otp.some((digit) => !digit)}
+              loading={loadingAuthActions && !loadingResend}
+              disabled={
+                loadingAuthActions ||
+                loadingResend ||
+                otp.some((digit) => !digit)
+              }
             >
-              {isLoading ? "Verifying..." : "Verify Code"}
+              {loadingAuthActions && !loadingResend
+                ? "Verifying..."
+                : "Verify Code"}
             </Button>
 
             {/* Resend */}
@@ -188,10 +231,10 @@ const VerifyOTP = () => {
               {canResend ? (
                 <button
                   onClick={handleResend}
-                  disabled={isLoading}
+                  disabled={loadingAuthActions || loadingResend}
                   className="text-sm font-medium text-primary-600 hover:text-primary-500 disabled:opacity-50"
                 >
-                  Resend code
+                  {loadingResend ? "Resending Code..." : "Resend code"}
                 </button>
               ) : (
                 <p className="text-sm text-gray-500 dark:text-gray-400">
@@ -207,6 +250,10 @@ const VerifyOTP = () => {
             <div className="text-center">
               <Link
                 to="/auth/login"
+                onClick={() => {
+                  // Clear localStorage when going back to login
+                  localStorage.removeItem(TIMER_KEY);
+                }}
                 className="inline-flex items-center text-sm font-medium text-primary-600 hover:text-primary-500"
               >
                 <ArrowLeft className="w-4 h-4 mr-1" />

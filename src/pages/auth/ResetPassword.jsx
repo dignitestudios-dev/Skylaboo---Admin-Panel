@@ -6,9 +6,10 @@ import Input from "../../components/ui/Input";
 import Card from "../../components/ui/Card";
 import { useForm } from "react-hook-form";
 import { SECURITY_CONFIG } from "../../config/constants";
+import { useAuth } from "../../contexts/AuthContext";
 
 const ResetPassword = () => {
-  const [isLoading, setIsLoading] = useState(false);
+  const { loadingAuthActions, updatePasswordAuth } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
@@ -18,7 +19,9 @@ const ResetPassword = () => {
 
   useEffect(() => {
     email = location.state?.email;
-    if (!email) {
+    const verified = location.state?.verified;
+
+    if (!email || !verified) {
       navigate("/auth/login");
     }
   }, [location]);
@@ -63,30 +66,23 @@ const ResetPassword = () => {
   };
 
   const onSubmit = async (data) => {
-    setIsLoading(true);
+    const payload = {
+      password: data.password,
+    };
 
-    try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+    const response = await updatePasswordAuth(payload);
 
-      // In real app, update password
-      console.log("Password reset for:", email);
-
+    if (response.success) {
       setIsSuccess(true);
+      reset();
 
-      // Redirect to login after 3 seconds
+      // Hide success message after 5 seconds
       setTimeout(() => {
-        navigate("/auth/login", {
-          state: {
-            message:
-              "Password reset successfully. Please login with your new password.",
-          },
-        });
-      }, 3000);
-    } catch (error) {
-      console.error("Error resetting password:", error);
-    } finally {
-      setIsLoading(false);
+        setIsSuccess(false);
+      }, 5000);
+    } else {
+      handleError(response.error || "Error changing password");
+      console.error("Error changing password:", response.error);
     }
   };
 
@@ -103,8 +99,7 @@ const ResetPassword = () => {
                 Password reset successful
               </h2>
               <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-                Your password has been updated successfully. You will be
-                redirected to the login page shortly.
+                Your password has been updated successfully.
               </p>
             </div>
 
@@ -239,6 +234,18 @@ const ResetPassword = () => {
                       One number
                     </li>
                   )}
+                  {SECURITY_CONFIG.passwordRequireNumbers && (
+                    <li
+                      className={`flex items-center text-sm ${
+                        /[!@#$%^&*(),.?":{}|<>]/.test(watchPassword)
+                          ? "text-green-600"
+                          : "text-gray-400"
+                      }`}
+                    >
+                      <CheckCircle className="w-3 h-3 mr-2" />
+                      One special character
+                    </li>
+                  )}
                 </ul>
               </div>
             )}
@@ -246,10 +253,10 @@ const ResetPassword = () => {
             <Button
               type="submit"
               className="w-full"
-              loading={isLoading}
-              disabled={isLoading}
+              loading={loadingAuthActions}
+              disabled={loadingAuthActions}
             >
-              {isLoading ? "Updating..." : "Update password"}
+              {loadingAuthActions ? "Updating..." : "Update password"}
             </Button>
 
             <div className="text-center">

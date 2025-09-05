@@ -74,8 +74,6 @@ export const AuthProvider = ({ children }) => {
       )}`;
       const devicemodel = navigator.userAgent || "Unknown Device";
 
-      console.log(deviceuniqueid, devicemodel);
-
       const response = await api.login({
         email,
         password,
@@ -174,10 +172,22 @@ export const AuthProvider = ({ children }) => {
   };
 
   // Verify OTP function
-  const verifyOTP = async (email, otp) => {
+  const verifyOTP = async (payload) => {
     setLoadingAuthActions(true);
     try {
-      const response = await api.verifyOTP(email, otp);
+      // Generate device information
+      const deviceuniqueid = `device-${Date.now()}-${Math.floor(
+        Math.random() * 10000
+      )}`;
+      const devicemodel = navigator.userAgent || "Unknown Device";
+
+      const payloadWithHeaders = {
+        ...payload,
+        deviceuniqueid,
+        devicemodel,
+      };
+
+      const response = await api.verifyOTP(payloadWithHeaders);
       const userData = response.data.user;
       const token = response.data.token;
 
@@ -190,7 +200,10 @@ export const AuthProvider = ({ children }) => {
       return { success: true };
     } catch (error) {
       handleError(error);
-      return { success: false, error: "OTP verification failed." };
+      return {
+        success: false,
+        error: error.message || "OTP verification failed.",
+      };
     } finally {
       setLoadingAuthActions(false);
     }
@@ -204,6 +217,39 @@ export const AuthProvider = ({ children }) => {
 
       if (response.success) {
         handleSuccess(response.message, "Password updated successfully");
+        return { success: true };
+      } else {
+        throw new Error(response.message || "Failed to update password.");
+      }
+    } catch (error) {
+      handleError(error);
+      return {
+        success: false,
+        error: error.message || "Failed to update password.",
+      };
+    } finally {
+      setLoadingAuthActions(false);
+    }
+  };
+
+  // Update password auth function
+  const updatePasswordAuth = async (payload) => {
+    setLoadingAuthActions(true);
+    try {
+      const response = await api.updatePasswordAuth(payload);
+
+      if (response.success) {
+        handleSuccess(response.message, "Password updated successfully");
+
+        // Clear auth data
+        localStorage.removeItem("authToken");
+        localStorage.removeItem("userData");
+
+        setUser(null);
+        setLoginAttempts(0);
+        localStorage.setItem("loginAttempts", 0);
+        setLockedUntil(null);
+        localStorage.setItem("lockedUntil", JSON.stringify(null));
         return { success: true };
       } else {
         throw new Error(response.message || "Failed to update password.");
@@ -273,6 +319,7 @@ export const AuthProvider = ({ children }) => {
     forgotPassword,
     verifyOTP,
     updatePassword,
+    updatePasswordAuth,
     register,
   };
 

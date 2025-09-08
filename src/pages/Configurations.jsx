@@ -24,6 +24,7 @@ const Configurations = () => {
     reset,
     control,
     clearErrors,
+    setError,
     formState: { errors },
   } = useForm({ defaultValues });
 
@@ -37,15 +38,22 @@ const Configurations = () => {
   }, [appConfigs, reset]);
 
   const onSubmit = (data) => {
-    if (data.shippingCost < 0) {
-      toast.error("Shipping cost cannot be negative");
-      return;
-    }
+    // if (data.shippingCost < 0) {
+    //   toast.error("Shipping cost cannot be negative");
+    //   return;
+    // }
 
     if (
-      data.shippingCost === appConfigs.shippingCost &&
+      // data.shippingCost === appConfigs.shippingCost &&
       data.pickupAddress === appConfigs.pickupAddress
     ) {
+      setError(
+        "pickupAddress",
+        { message: "No Change in Pickup Address" },
+        {
+          shouldFocus: true,
+        }
+      );
       return;
     }
 
@@ -77,7 +85,7 @@ const Configurations = () => {
                 error={errors.pickupAddress?.message}
               />
 
-              <Input
+              {/* <Input
                 label="Shipping Cost"
                 type="number"
                 {...register("shippingCost", {
@@ -85,7 +93,7 @@ const Configurations = () => {
                 })}
                 disabled={loading}
                 error={errors.shippingCost?.message}
-              />
+              /> */}
             </div>
 
             <div className="w-full flex justify-end">
@@ -96,7 +104,7 @@ const Configurations = () => {
               >
                 {loading
                   ? "Updating Configurations..."
-                  : "Updating Configurations"}
+                  : "Update Configurations"}
               </Button>
             </div>
           </form>

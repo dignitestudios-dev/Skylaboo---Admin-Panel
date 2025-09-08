@@ -117,7 +117,11 @@ const getDashboardAnalytics = () =>
 
 // Products API
 const createProduct = (productData) =>
-  apiHandler(() => API.post(`/product`, productData));
+  apiHandler(() =>
+    API.post(`/product`, productData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    })
+  );
 
 const getAllProducts = (
   search,

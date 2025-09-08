@@ -41,7 +41,7 @@ export const THEME_OPTIONS = {
 // API Configuration
 export const API_CONFIG = {
   baseURL: import.meta.env.VITE_BASE_URL || "http://localhost:8080",
-  timeout: 10000,
+  timeout: 100000,
   headers: {
     "Content-Type": "application/json",
   },

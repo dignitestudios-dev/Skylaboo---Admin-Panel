@@ -191,6 +191,14 @@ const Categories = () => {
     reset(defaultValues);
   };
 
+  const handleExportCategories = (data) => {
+    return data.map((category) => ({
+      Title: category?.name,
+      Status: category?.isActive ? "Active" : "Inactive",
+      Created: formatDate(category?.createdAt),
+    }));
+  };
+
   const onSubmit = async (data) => {
     try {
       if (editingCategory) {
@@ -266,6 +274,7 @@ const Categories = () => {
           loading={loading}
           data={categories}
           columns={columns}
+          onExport={handleExportCategories}
           onAdd={handleAdd}
           pageSize={pageSize}
           onPageSizeChange={handlePageSizeChange}

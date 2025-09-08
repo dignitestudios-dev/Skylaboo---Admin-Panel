@@ -19,7 +19,7 @@ import Button from "../components/ui/Button";
 import Badge from "../components/ui/Badge";
 import Card from "../components/ui/Card";
 import Modal from "../components/ui/Modal";
-import { formatCurrency, formatDateTime, formatNumber } from "../utils/helpers";
+import { formatCurrency, formatDate, formatDateTime, formatNumber } from "../utils/helpers";
 import { ORDER_STATUS, PAGINATION_CONFIG } from "../config/constants";
 import useOrderActions from "../hooks/orders/useOrderActions";
 import useDebounce from "../hooks/global/useDebounce";
@@ -333,6 +333,48 @@ const Orders = () => {
     setSearch(search);
   };
 
+  const handleOrdersExport = (data) => {
+    return data.map((order) => {
+      // Efficiently format products with single iteration
+      let productsText = "No products";
+      let totalItems = 0;
+
+      if (order.products?.length > 0) {
+        const productStrings = [];
+
+        for (const item of order.products) {
+          totalItems += item.quantity || 0;
+
+          const name = item.product?.title || "Unknown";
+          const qty = item.quantity || 0;
+          const specs = [];
+
+          if (item.selectedColor) specs.push(item.selectedColor);
+          if (item.selectedSize) specs.push(item.selectedSize);
+
+          productStrings.push(
+            `${name} x${qty}${specs.length ? ` (${specs.join(", ")})` : ""}`
+          );
+        }
+
+        productsText = productStrings.join(" | ");
+      }
+
+      return {
+        "Order ID": order.shortCode || "",
+        Customer: order.contact?.email || "",
+        Products: productsText,
+        "Total Items": totalItems,
+        Total: formatCurrency(order.totalAmount) || "N/A",
+        "Shipping Cost": formatCurrency(order.shippingCost),
+        "Order Type": order.orderType || "",
+        "Order Status": order.orderStatus || "",
+        "Payment Status": order.paymentStatus || "",
+        Created: formatDate(order.createdAt),
+      };
+    });
+  };
+
   const orderStats = useMemo(
     () => [
       {
@@ -404,6 +446,7 @@ const Orders = () => {
         title="Orders Management"
         data={orders}
         columns={columns}
+        onExport={handleOrdersExport}
         loading={loading}
         pageSize={pageSize}
         onPageSizeChange={handlePageSizeChange}

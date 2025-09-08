@@ -35,8 +35,49 @@ const DataTable = ({
   // Export handler
   const handleExport = () => {
     if (onExport) {
-      onExport(data);
+      // Call custom export function and get formatted data
+      const formattedData = onExport(data);
+
+      if (!formattedData || formattedData.length === 0) {
+        console.warn("No data to export");
+        return;
+      }
+
+      // Get headers from the first row keys
+      const headers = Object.keys(formattedData[0]);
+
+      // Create CSV content
+      const csvContent = [
+        // Header row
+        headers.map((header) => `"${header}"`).join(","),
+        // Data rows
+        ...formattedData.map((row) =>
+          headers
+            .map((header) => {
+              let value = row[header] || "";
+              // Clean and escape for CSV
+              value = value.toString().replace(/"/g, '""');
+              return `"${value}"`;
+            })
+            .join(",")
+        ),
+      ].join("\n");
+
+      // Create and download file
+      const BOM = "\uFEFF"; // Byte Order Mark for proper UTF-8 encoding
+      const blob = new Blob([BOM + csvContent], {
+        type: "text/csv;charset=utf-8;",
+      });
+
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = `${title?.replace(/\s+/g, "_") || "data"}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(link.href);
     } else {
+      // Fallback to original logic if no custom export function
       const csv = [
         columns.map((col) => col.label).join(","),
         ...data.map((row) =>

@@ -33,6 +33,7 @@ import useCreateProduct from "../hooks/products/useCreateProduct";
 import ImageUploader from "../components/ui/ImageUploader";
 import ImagesGallery from "../components/ui/ImagesGallery";
 import StatsCard from "../components/common/StatsCard";
+import toast from "react-hot-toast";
 
 const Products = () => {
   const [currentPage, setCurrentPage] = useState(1);
@@ -131,6 +132,12 @@ const Products = () => {
     {
       key: "price",
       label: "Price",
+
+      render: (value) => formatCurrency(value),
+    },
+    {
+      key: "shippingCost",
+      label: "Shipping Cost",
 
       render: (value) => formatCurrency(value),
     },
@@ -300,16 +307,24 @@ const Products = () => {
     reset(defaultValues);
   };
 
-  const onSubmit = async (data) => {
-    // const formData = new FormData();
-    // Object.keys(data).forEach((key) => {
-    //   if (key === "images") {
-    //     data[key].forEach((image) => formData.append("images", image));
-    //   } else {
-    //     formData.append(key, data[key]);
-    //   }
-    // });
+  const handleProductExport = (data) => {
+    // Transform data to match your table display
+    return data.map((product) => ({
+      ID: product._id || "",
+      "Product Name": product.title || "",
+      Category: product.category?.name || "",
+      Price: formatCurrency(product.price),
+      "Shipping Cost": formatCurrency(product.shippingCost),
+      Stock: product.stock ? formatNumber(product.stock) : "N/A",
+      Sizes: product.sizes?.join(", ") || "",
+      Colors: product.colors?.join(", ") || "",
+      Status: product.isActive ? "Active" : "Inactive",
+      Created: formatDate(product.createdAt),
+    }));
+  };
 
+  const onSubmit = async (data) => {
+    // Convert receivingOptions to array
     const receivingOptions =
       data.receivingOptions === "delivery"
         ? ["delivery"]
@@ -319,37 +334,64 @@ const Products = () => {
         ? ["delivery", "pickup"]
         : [];
 
-    const payload = {
-      ...data,
-      receivingOptions: receivingOptions,
-      isActive: JSON.parse(data.isActive), // Convert string to boolean
-    };
-
     try {
       if (editingProduct) {
+        // Build plain JSON payload (no FormData)
         const productId = editingProduct._id;
+        const payload = {
+          title: data.title,
+          subtitle: data.subtitle,
+          description: data.description,
+          price: data.price,
+          shippingCost: data.shippingCost,
+          stock: data.stock,
+          category: data.category,
+          isFeatured: data.isFeatured,
+          isActive: data.isActive,
+          isDeleted: false,
+          colors: data.colors || [],
+          sizes: data.sizes || [],
+          receivingOptions,
+        };
 
-        const {
-          _id,
-          images,
-          createdAt,
-          updatedAt,
-          __v,
-          ...editProductPayload
-        } = payload;
-
-        console.log("editProductPayload: ", editProductPayload);
-
-        const success = await updateProduct(productId, editProductPayload);
+        const success = await updateProduct(productId, payload); // JSON
         if (success) {
           reset(defaultValues);
           setShowModal(false);
           getAllProducts();
         }
       } else {
-        const { images, ...apiPayload } = payload;
+        // For create, still need FormData because of images
+        const formData = new FormData();
 
-        const success = await createProduct(apiPayload);
+        // Append scalar fields
+        formData.append("title", data.title);
+        formData.append("subtitle", data.subtitle);
+        formData.append("description", data.description);
+        formData.append("price", data.price);
+        formData.append("shippingCost", data.shippingCost);
+        formData.append("stock", data.stock);
+        formData.append("category", data.category);
+        formData.append("isFeatured", data.isFeatured);
+        formData.append("isActive", data.isActive);
+        formData.append("isDeleted", false);
+
+        // Append array fields as JSON string
+        formData.append("colors", JSON.stringify(data.colors || []));
+        formData.append("sizes", JSON.stringify(data.sizes || []));
+        formData.append("receivingOptions", JSON.stringify(receivingOptions));
+
+        // Append files (images)
+        if (data.images && data.images.length > 0) {
+          data.images.forEach((file) => {
+            formData.append("images", file);
+          });
+        } else {
+          toast.error("Please upload at least one image");
+          return;
+        }
+
+        const success = await createProduct(formData);
         if (success) {
           reset(defaultValues);
           setShowModal(false);
@@ -357,7 +399,7 @@ const Products = () => {
         }
       }
     } catch (error) {
-      console.error("Error creating product:", error);
+      console.error("Error creating/updating product:", error);
     }
   };
 
@@ -403,6 +445,7 @@ const Products = () => {
           loading={loading}
           data={products}
           columns={columns}
+          onExport={handleProductExport}
           onAdd={handleAdd}
           pageSize={pageSize}
           onPageSizeChange={handlePageSizeChange}
@@ -416,6 +459,7 @@ const Products = () => {
           exportable
         />
 
+        {/* Create/Edit Product Modal */}
         <Modal
           isOpen={showModal}
           onClose={handleModalClose}
@@ -441,7 +485,7 @@ const Products = () => {
               />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <Input
                 label="Price"
                 type="number"
@@ -452,6 +496,18 @@ const Products = () => {
                 })}
                 disabled={loadingCreateProduct}
                 error={errors.price?.message}
+              />
+
+              <Input
+                label="Shipping Cost"
+                type="number"
+                step="0.01"
+                {...register("shippingCost", {
+                  required: "Shipping Cost is required",
+                  min: { value: 0, message: "Shipping Cost must be positive" },
+                })}
+                disabled={loadingCreateProduct}
+                error={errors.shippingCost?.message}
               />
 
               <Input
@@ -651,6 +707,7 @@ const Products = () => {
                   multiple
                   error={fieldState.error?.message}
                   disabled={loadingCreateProduct}
+                  allowUpload={editingProduct ? false : true}
                 />
               )}
             />
@@ -689,6 +746,7 @@ const Products = () => {
           </form>
         </Modal>
 
+        {/* View Product Modal */}
         <Modal
           isOpen={showViewProductModal}
           onClose={() => setShowViewProductModal(false)}
@@ -729,7 +787,7 @@ const Products = () => {
 
                 <div className="flex items-center space-x-4">
                   <span className="text-3xl font-bold text-primary-600 dark:text-primary-400">
-                    ${viewingProduct?.price}
+                    {formatCurrency(viewingProduct?.price)}
                   </span>
                   {viewingProduct?.isFeatured && (
                     <div className="flex items-center text-yellow-500">
@@ -737,6 +795,14 @@ const Products = () => {
                       <span className="ml-1 text-sm font-medium">Featured</span>
                     </div>
                   )}
+                </div>
+                <div>
+                  <p className="text-sm text-gray-400">
+                    Shipping Cost:{" "}
+                    <span className="text-black dark:text-white">
+                      {formatCurrency(viewingProduct?.shippingCost)}
+                    </span>
+                  </p>
                 </div>
               </div>
 

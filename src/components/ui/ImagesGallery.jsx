@@ -1,11 +1,5 @@
 import React, { useState } from "react";
-import {
-  X,
-  ChevronLeft,
-  ChevronRight,
-  Package,
-  Eye,
-} from "lucide-react";
+import { X, ChevronLeft, ChevronRight, Package, Eye } from "lucide-react";
 
 // Reusable ImageGallery Component
 const ImagesGallery = ({ images = [], className = "" }) => {
@@ -54,7 +48,7 @@ const ImagesGallery = ({ images = [], className = "" }) => {
             onClick={() => openFullscreen(0)}
           >
             <img
-              src={images[0].link}
+              src={images[0]}
               alt="Product image"
               className="w-full h-64 sm:h-80 object-cover rounded-lg transition-transform"
             />
@@ -70,7 +64,7 @@ const ImagesGallery = ({ images = [], className = "" }) => {
               onClick={() => openFullscreen(0)}
             >
               <img
-                src={images[0].link}
+                src={images[0]}
                 alt="Main product image"
                 className="w-full h-64 sm:h-80 object-cover rounded-lg transition-transform"
               />
@@ -88,7 +82,7 @@ const ImagesGallery = ({ images = [], className = "" }) => {
                   onClick={() => openFullscreen(index + 1)}
                 >
                   <img
-                    src={image.link}
+                    src={image}
                     alt={`Product image ${index + 2}`}
                     className="w-full h-20 sm:h-24 object-cover rounded-lg transition-transform"
                   />
@@ -104,7 +98,7 @@ const ImagesGallery = ({ images = [], className = "" }) => {
 
       {/* Fullscreen Modal */}
       {showFullscreen && (
-        <div className="fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center p-4 rounded-lg">
           {/* Close Button */}
           <button
             onClick={closeFullscreen}
@@ -134,7 +128,7 @@ const ImagesGallery = ({ images = [], className = "" }) => {
           {/* Main Image */}
           <div className="max-w-4xl max-h-full flex flex-col items-center">
             <img
-              src={images[currentImageIndex].link}
+              src={images[currentImageIndex]}
               alt={`Product image ${currentImageIndex + 1}`}
               className="max-w-full max-h-[80vh] object-contain rounded-lg"
             />
@@ -159,7 +153,7 @@ const ImagesGallery = ({ images = [], className = "" }) => {
                   }`}
                 >
                   <img
-                    src={image.link}
+                    src={image}
                     alt={`Thumbnail ${index + 1}`}
                     className="w-full h-full object-cover"
                   />

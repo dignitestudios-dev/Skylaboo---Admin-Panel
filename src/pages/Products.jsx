@@ -75,7 +75,7 @@ const Products = () => {
     isFeatured: false,
     colors: [],
     sizes: [],
-    receivingOptions: "",
+    receivingOptions: "both",
   };
 
   const {
@@ -84,6 +84,7 @@ const Products = () => {
     reset,
     control,
     clearErrors,
+    getValues,
     formState: { errors },
   } = useForm({ defaultValues });
 
@@ -485,11 +486,18 @@ const Products = () => {
               />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div
+              className={`grid grid-cols-1 ${
+                getValues("receivingOptions") !== "pickup"
+                  ? "md:grid-cols-3"
+                  : "md:grid-cols-2"
+              } gap-4`}
+            >
               <Input
                 label="Price"
                 type="number"
                 step="0.01"
+                min="0"
                 {...register("price", {
                   required: "Price is required",
                   min: { value: 0, message: "Price must be positive" },
@@ -498,17 +506,22 @@ const Products = () => {
                 error={errors.price?.message}
               />
 
-              <Input
-                label="Shipping Cost"
-                type="number"
-                step="0.01"
-                {...register("shippingCost", {
-                  required: "Shipping Cost is required",
-                  min: { value: 0, message: "Shipping Cost must be positive" },
-                })}
-                disabled={loadingCreateProduct}
-                error={errors.shippingCost?.message}
-              />
+              {getValues("receivingOptions") !== "pickup" && (
+                <Input
+                  label="Shipping Cost"
+                  type="number"
+                  step="0.01"
+                  {...register("shippingCost", {
+                    required: "Shipping Cost is required",
+                    min: {
+                      value: 0,
+                      message: "Shipping Cost must be positive",
+                    },
+                  })}
+                  disabled={loadingCreateProduct}
+                  error={errors.shippingCost?.message}
+                />
+              )}
 
               <Input
                 label="Stock"
@@ -559,10 +572,9 @@ const Products = () => {
                   <Select
                     label="Receiving Option"
                     options={[
-                      { value: "", label: "Select Receiving Option" },
+                      { value: "both", label: "Both Pickup and Delivery" },
                       { value: "delivery", label: "Delivery" },
                       { value: "pickup", label: "Pickup" },
-                      { value: "both", label: "Both Pickup and Delivery" },
                     ]}
                     value={field.value || ""}
                     onChange={(value) => {
